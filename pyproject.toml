@@ -1,0 +1,17 @@
+[project]
+name = "filechat"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Milos Svana", email = "milos.svana@mailfence.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+index = "filechat:index_files"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
