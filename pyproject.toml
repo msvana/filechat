@@ -3,11 +3,11 @@ name = "filechat"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-authors = [
-    { name = "Milos Svana", email = "milos.svana@mailfence.com" }
-]
+authors = [{ name = "Milos Svana", email = "milos.svana@mailfence.com" }]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "sentence-transformers>=5.0.0",
+]
 
 [project.scripts]
 index = "filechat:index_files"
@@ -15,3 +15,13 @@ index = "filechat:index_files"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+preview = true
+unstable = true
+enable-unstable-feature = [
+  "multiline_string_handling",
+  "string_processing",
+  "wrap_long_dict_values_in_parens",
+]

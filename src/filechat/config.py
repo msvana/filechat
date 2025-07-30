@@ -8,3 +8,6 @@ class Config:
 
     def get_max_file_size(self):
         return 25 * 1024
+
+    def get_embedding_model(self):
+        return "Qwen/Qwen3-Embedding-0.6B"
