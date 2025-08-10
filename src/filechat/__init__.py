@@ -5,6 +5,7 @@ from hashlib import sha256
 from textwrap import dedent
 
 import faiss
+from mistralai import Mistral
 from sentence_transformers import SentenceTransformer
 
 from filechat.config import Config
@@ -13,7 +14,6 @@ logging.basicConfig(level=logging.INFO)
 
 arg_parser = ArgumentParser(description="Index files in a directory")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
-arg_parser.add_argument("query", type=str, help="A question about your project")
 
 config = Config()
 
@@ -48,8 +48,14 @@ def index_files():
 
             index.add_file(relative_path)
 
-    files = index.query(args.query)
-    print(files)
+    chat = Chat()
+
+    while True:
+        user_message = input(">>> ")
+        if user_message == "/exit":
+            break
+        files = index.query(user_message)
+        chat.user_message(user_message, files)
 
 
 class IndexedFile:
@@ -108,6 +114,7 @@ class FileIndex:
 
 
 class Chat:
+    MODEL = "devstral-medium-2507"
     SYSTEM_MESSAGE = dedent("""\
     You are a local project assistant. Your task is to assist the user with various projects. 
     They can ask you question to understand the project or for suggestions on how to improve the projects.
@@ -118,7 +125,35 @@ class Chat:
     """)
 
     def __init__(self):
-        self._message_history = [{"role": "system", "content": ""}]
+        self._message_history = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
+        self._client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
-    def user_message(self, message: str, files: list[IndexedFile]) -> str:
-        pass
+    def user_message(self, message: str, files: list[IndexedFile]):
+        user_message = {"role": "user", "content": message}
+        context_message = self._get_context_message(files)
+        self._message_history.append(user_message)
+        response = self._client.chat.stream(
+            model=self.MODEL,
+            messages=self._message_history + [context_message],  # type: ignore
+        )
+
+        response_str = ""
+
+        for chunk in response:
+            chunk_content = chunk.data.choices[0].delta.content
+            response_str += str(chunk_content)
+            print(chunk_content, end="")
+        
+        self._message_history.append({"role": "assistant", "content": response_str})
+        print()
+
+    def _get_context_message(self, files: list[IndexedFile]) -> dict:
+        message = "<context>"
+
+        for file in files:
+            message += "<file>"
+            message += file.content_for_embedding()
+            message += "</file>"
+
+        message += "</context>"
+        return {"role": "user", "content": message}
