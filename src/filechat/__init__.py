@@ -1,13 +1,19 @@
+import logging
 import os
 from argparse import ArgumentParser
+from hashlib import sha256
 from textwrap import dedent
 
+import faiss
 from sentence_transformers import SentenceTransformer
 
 from filechat.config import Config
 
+logging.basicConfig(level=logging.INFO)
+
 arg_parser = ArgumentParser(description="Index files in a directory")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
+arg_parser.add_argument("query", type=str, help="A question about your project")
 
 config = Config()
 
@@ -20,6 +26,8 @@ def index_files():
     allowed_suffixes = config.get_allowed_suffixes()
     ignored_directories = config.get_ignored_directories()
 
+    index = FileIndex(sentence_transformer, directory, 1024)
+
     if not os.path.isdir(directory):
         raise ValueError(f"The provided path '{directory}' is not a valid directory.")
 
@@ -31,23 +39,86 @@ def index_files():
             full_path = os.path.join(root, file)
             relative_path = os.path.relpath(full_path, directory)
 
-            if any(file.endswith(suffix) for suffix in allowed_suffixes):
-                get_size = os.path.getsize(full_path)
-                if get_size < config.get_max_file_size():
-                    store_file(relative_path, full_path)
+            if all(not file.endswith(suffix) for suffix in allowed_suffixes):
+                continue
+
+            file_size = os.path.getsize(full_path)
+            if file_size > config.get_max_file_size():
+                continue
+
+            index.add_file(relative_path)
+
+    files = index.query(args.query)
+    print(files)
 
 
-def store_file(relative_path, full_path):
-    with open(full_path) as f:
-        content = f.read()
+class IndexedFile:
+    EMBEDDING_TEMPLATE = dedent("""\
+        <filename>{relative_path}</filename>
+        <content>
+        {content}
+        </content>""")
 
-    text_to_embed_template = dedent("""\
-    <filename>{relative_path}</filename>
+    def __init__(self, directory: str, relative_path: str):
+        self._relative_path = relative_path
+        self._full_path = os.path.join(directory, relative_path)
+        self._load_content()
 
-    <content>
-    {content}
-    </content>""")
+    def __repr__(self):
+        return f"IndexedFile('{self._relative_path}')"
 
-    text_to_embed = text_to_embed_template.format(relative_path=relative_path, content=content)
-    text_embedding = sentence_transformer.encode(text_to_embed)
-    
+    def content(self):
+        return self._content
+
+    def content_for_embedding(self) -> str:
+        embedding_text = self.EMBEDDING_TEMPLATE.format(
+            relative_path=self._relative_path, content=self._content
+        )
+        return embedding_text
+
+    def _load_content(self):
+        with open(self._full_path) as f:
+            self._content: str = f.read()
+        self._sha_hash = sha256(self._content.encode())
+
+
+class FileIndex:
+    def __init__(self, embedding_model: SentenceTransformer, directory: str, dimensions: int):
+        self._model = embedding_model
+        self._directory = os.path.abspath(directory)
+        self._dimensions = dimensions
+        self._vector_index = faiss.IndexFlatL2(self._dimensions)
+        self._files: list[IndexedFile] = []
+
+    def add_file(self, relative_path: str):
+        logging.info(f"Indexing `{relative_path}`")
+        indexed_file = IndexedFile(self._directory, relative_path)
+        embedding = self._model.encode(indexed_file.content_for_embedding())
+        self._vector_index.add(embedding.reshape(1, -1))
+        self._files.append(indexed_file)
+
+    def query(self, query: str, top_k: int = 5) -> list[IndexedFile]:
+        logging.info(f"Querying: `{query}`")
+        query_embedding = self._model.encode(query)
+        _, indices = self._vector_index.search(query_embedding.reshape(1, -1), k=top_k)
+        matching_files = []
+        for idx in indices[0]:
+            matching_files.append(self._files[idx])
+        return matching_files
+
+
+class Chat:
+    SYSTEM_MESSAGE = dedent("""\
+    You are a local project assistant. Your task is to assist the user with various projects. 
+    They can ask you question to understand the project or for suggestions on how to improve the projects.
+
+    Besides the user's query. You will be also provided with the contents of 
+    the files potentially most relevant to this query. If needed, you can use the content of these file
+    to create a better response.
+    """)
+
+    def __init__(self):
+        self._message_history = [{"role": "system", "content": ""}]
+
+    def user_message(self, message: str, files: list[IndexedFile]) -> str:
+        pass
