@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
 
     def get_allowed_suffixes(self):
