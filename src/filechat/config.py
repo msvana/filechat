@@ -1,3 +1,5 @@
+import os
+
 class Config:
 
     def get_allowed_suffixes(self):
@@ -11,3 +13,7 @@ class Config:
 
     def get_embedding_model(self):
         return "Qwen/Qwen3-Embedding-0.6B"
+
+    def get_index_store_path(self):
+        home = os.environ["HOME"]
+        return os.path.join(home, ".cache", "filechat")

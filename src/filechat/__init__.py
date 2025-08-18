@@ -1,14 +1,13 @@
 import logging
 import os
 from argparse import ArgumentParser
-from hashlib import sha256
 from textwrap import dedent
 
-import faiss
 from mistralai import Mistral
 from sentence_transformers import SentenceTransformer
 
 from filechat.config import Config
+from filechat.index import FileIndex, IndexedFile, IndexStore
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +25,13 @@ def index_files():
     allowed_suffixes = config.get_allowed_suffixes()
     ignored_directories = config.get_ignored_directories()
 
-    index = FileIndex(sentence_transformer, directory, 1024)
+    index_store = IndexStore(config.get_index_store_path())
+
+    try:
+        index = index_store.load(directory, sentence_transformer)
+    except FileNotFoundError:
+        logging.info("Index file not found. Creating new index from scratch")
+        index = FileIndex(sentence_transformer, directory, 1024)
 
     if not os.path.isdir(directory):
         raise ValueError(f"The provided path '{directory}' is not a valid directory.")
@@ -48,6 +53,7 @@ def index_files():
 
             index.add_file(relative_path)
 
+    index_store.store(index)
     chat = Chat()
 
     while True:
@@ -58,63 +64,8 @@ def index_files():
         chat.user_message(user_message, files)
 
 
-class IndexedFile:
-    EMBEDDING_TEMPLATE = dedent("""\
-        <filename>{relative_path}</filename>
-        <content>
-        {content}
-        </content>""")
-
-    def __init__(self, directory: str, relative_path: str):
-        self._relative_path = relative_path
-        self._full_path = os.path.join(directory, relative_path)
-        self._load_content()
-
-    def __repr__(self):
-        return f"IndexedFile('{self._relative_path}')"
-
-    def content(self):
-        return self._content
-
-    def content_for_embedding(self) -> str:
-        embedding_text = self.EMBEDDING_TEMPLATE.format(
-            relative_path=self._relative_path, content=self._content
-        )
-        return embedding_text
-
-    def _load_content(self):
-        with open(self._full_path) as f:
-            self._content: str = f.read()
-        self._sha_hash = sha256(self._content.encode())
-
-
-class FileIndex:
-    def __init__(self, embedding_model: SentenceTransformer, directory: str, dimensions: int):
-        self._model = embedding_model
-        self._directory = os.path.abspath(directory)
-        self._dimensions = dimensions
-        self._vector_index = faiss.IndexFlatL2(self._dimensions)
-        self._files: list[IndexedFile] = []
-
-    def add_file(self, relative_path: str):
-        logging.info(f"Indexing `{relative_path}`")
-        indexed_file = IndexedFile(self._directory, relative_path)
-        embedding = self._model.encode(indexed_file.content_for_embedding())
-        self._vector_index.add(embedding.reshape(1, -1))
-        self._files.append(indexed_file)
-
-    def query(self, query: str, top_k: int = 5) -> list[IndexedFile]:
-        logging.info(f"Querying: `{query}`")
-        query_embedding = self._model.encode(query)
-        _, indices = self._vector_index.search(query_embedding.reshape(1, -1), k=top_k)
-        matching_files = []
-        for idx in indices[0]:
-            matching_files.append(self._files[idx])
-        return matching_files
-
-
 class Chat:
-    MODEL = "devstral-medium-2507"
+    MODEL = "codestral-2508"
     SYSTEM_MESSAGE = dedent("""\
     You are a local project assistant. Your task is to assist the user with various projects. 
     They can ask you question to understand the project or for suggestions on how to improve the projects.
@@ -143,7 +94,7 @@ class Chat:
             chunk_content = chunk.data.choices[0].delta.content
             response_str += str(chunk_content)
             print(chunk_content, end="")
-        
+
         self._message_history.append({"role": "assistant", "content": response_str})
         print()
 
