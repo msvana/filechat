@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 arg_parser = ArgumentParser(description="Index files in a directory")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
 arg_parser.add_argument(
-    "-r", "--rebuild", type=str, help="Ignore cache, rebuild index from scratch"
+    "-r", "--rebuild", action="store_true", help="Ignore cache, rebuild index from scratch"
 )
 
 config = Config()
@@ -46,10 +46,12 @@ def get_index(
         raise ValueError(f"The provided path '{directory}' is not a valid directory.")
 
     if rebuild:
+        logging.info("Rebuilding index from scratch")
         index = FileIndex(embedding_model, directory, 1024)
     else:
         try:
             index = index_store.load(directory, embedding_model)
+            index.clean_old_files()
         except FileNotFoundError:
             logging.info("Index file not found. Creating new index from scratch")
             index = FileIndex(embedding_model, directory, 1024)

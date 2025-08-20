@@ -69,15 +69,22 @@ class FileIndex:
             return False
 
         if idx:
-            self._files.pop(idx)
-            self._vector_index.remove_ids(np.array([idx]))
+            self._delete_file(idx)
 
         assert self._model is not None
         embedding = self._model.encode(indexed_file.content_for_embedding())
         self._vector_index.add(embedding.reshape(1, -1))
-        
+
         self._files.append(indexed_file)
         return True
+
+    def clean_old_files(self):
+        for file in self._files:
+            full_path = os.path.join(self._directory, file.path())
+            if not os.path.exists(full_path):
+                idx, _ = self._file_needs_update(file)
+                if idx is not None:
+                    self._delete_file(idx)
 
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:
         logging.info(f"Querying: `{query}`")
@@ -95,8 +102,12 @@ class FileIndex:
     def _file_needs_update(self, indexed_file: IndexedFile):
         for i, f in enumerate(self._files):
             if indexed_file.path() == f.path():
-                return (i, True) if indexed_file.hash() != f.hash() else (None, False)
+                return (i, True) if indexed_file.hash() != f.hash() else (i, False)
         return None, True
+
+    def _delete_file(self, idx: int):
+        self._files.pop(idx)
+        self._vector_index.remove_ids(np.array([idx]))
 
 
 class IndexStore:
@@ -124,6 +135,12 @@ class IndexStore:
         file_index.set_model(embedding_model)
         logging.info("Index loaded")
         return file_index
+
+    def remove(self, directory: str):
+        directory_abs_path = os.path.abspath(directory)
+        file_path = self._get_file_path(directory_abs_path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
     def _get_file_path(self, directory: str) -> str:
         file_hash = sha256(directory.encode()).hexdigest()

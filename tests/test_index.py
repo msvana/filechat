@@ -7,10 +7,16 @@ from sentence_transformers import SentenceTransformer
 
 from filechat import get_index
 from filechat.config import Config
+from filechat.index import IndexStore
 
 
 @pytest.fixture
-def test_directory():
+def config():
+    return Config()
+
+
+@pytest.fixture(scope="function")
+def test_directory(config: Config):
     test_dir = tempfile.mkdtemp()
     test_files = ["test.txt", "test.json", "test.py", "test.toml", "test.html", "test.md"]
 
@@ -20,11 +26,8 @@ def test_directory():
 
     yield test_dir
     shutil.rmtree(test_dir)
-
-
-@pytest.fixture
-def config():
-    return Config()
+    store = IndexStore(config.get_index_store_path())
+    store.remove(test_dir)
 
 
 @pytest.fixture
@@ -45,7 +48,7 @@ def test_index_files(test_directory, config: Config, embedding_model: SentenceTr
     assert len(index._files) == len(set(f.hash for f in index._files))
 
 
-def test_update_new_file(test_directory, config: Config, embedding_model: SentenceTransformer):
+def test_new_file(test_directory, config: Config, embedding_model: SentenceTransformer):
     index, _ = get_index(test_directory, config, embedding_model)
 
     new_file = "new_file.txt"
@@ -64,7 +67,41 @@ def test_update_new_file(test_directory, config: Config, embedding_model: Senten
     assert len(index._files) == len(set(f.hash for f in index._files))
 
 
-def test_update_rebuild(test_directory, config: Config, embedding_model: SentenceTransformer):
+def test_file_change(test_directory, config: Config, embedding_model: SentenceTransformer):
+    index, _ = get_index(test_directory, config, embedding_model)
+    num_files_before = len(index._files)
+
+    filename = "test.txt"
+    with open(os.path.join(test_directory, filename), "w") as f:
+        f.write("This is the content of {filename}. There is some new stuff to it")
+
+    num_updates = 0
+    for file in os.listdir(test_directory):
+        num_updates += index.add_file(file)
+    assert num_updates == 1
+
+    indexed_files = [file.path() for file in index._files]
+    assert filename in indexed_files
+
+    assert len(index._files) == index._vector_index.ntotal
+    assert len(index._files) == num_files_before
+
+
+def test_delete_file(test_directory, config: Config, embedding_model: SentenceTransformer):
+    index, _ = get_index(test_directory, config, embedding_model)
+    os.remove(os.path.join(test_directory, "test.md"))
+    os.remove(os.path.join(test_directory, "test.json"))
+    index, _ = get_index(test_directory, config, embedding_model)
+
+    indexed_files = [file.path() for file in index._files]
+    assert "test.md" not in indexed_files
+    assert "test.json" not in indexed_files
+
+    assert len(indexed_files) == len(os.listdir(test_directory))
+    assert len(index._files) == index._vector_index.ntotal
+
+
+def test_rebuild(test_directory, config: Config, embedding_model: SentenceTransformer):
     get_index(test_directory, config, embedding_model)
     _, num_indexed = get_index(test_directory, config, embedding_model)
     assert num_indexed == 0
