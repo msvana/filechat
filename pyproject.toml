@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-index = "filechat:index_files"
+chat = "filechat:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -26,4 +26,9 @@ enable-unstable-feature = [
   "multiline_string_handling",
   "string_processing",
   "wrap_long_dict_values_in_parens",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
 ]
