@@ -12,6 +12,9 @@ logging.basicConfig(level=logging.INFO)
 
 arg_parser = ArgumentParser(description="Index files in a directory")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
+arg_parser.add_argument(
+    "-r", "--rebuild", type=str, help="Ignore cache, rebuild index from scratch"
+)
 
 config = Config()
 
@@ -19,7 +22,7 @@ config = Config()
 def main():
     args = arg_parser.parse_args()
     sentence_transformer = SentenceTransformer(config.get_embedding_model())
-    index = get_index(args.directory, config, sentence_transformer)
+    index, _ = get_index(args.directory, config, sentence_transformer, args.rebuild)
     chat = Chat()
 
     while True:
@@ -32,7 +35,9 @@ def main():
         chat.user_message(user_message, files)
 
 
-def get_index(directory: str, config: Config, embedding_model: SentenceTransformer) -> FileIndex:
+def get_index(
+    directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
+) -> tuple[FileIndex, int]:
     allowed_suffixes = config.get_allowed_suffixes()
     ignored_directories = config.get_ignored_directories()
     index_store = IndexStore(config.get_index_store_path())
@@ -40,12 +45,16 @@ def get_index(directory: str, config: Config, embedding_model: SentenceTransform
     if not os.path.isdir(directory):
         raise ValueError(f"The provided path '{directory}' is not a valid directory.")
 
-    try:
-        index = index_store.load(directory, embedding_model)
-    except FileNotFoundError:
-        logging.info("Index file not found. Creating new index from scratch")
+    if rebuild:
         index = FileIndex(embedding_model, directory, 1024)
+    else:
+        try:
+            index = index_store.load(directory, embedding_model)
+        except FileNotFoundError:
+            logging.info("Index file not found. Creating new index from scratch")
+            index = FileIndex(embedding_model, directory, 1024)
 
+    num_indexed = 0
     for root, _, files in os.walk(directory):
         if any(ignored in root for ignored in ignored_directories):
             continue
@@ -61,7 +70,7 @@ def get_index(directory: str, config: Config, embedding_model: SentenceTransform
             if file_size > config.get_max_file_size():
                 continue
 
-            index.add_file(relative_path)
+            num_indexed += index.add_file(relative_path)
 
     index_store.store(index)
-    return index
+    return index, num_indexed

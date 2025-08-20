@@ -59,14 +59,14 @@ class FileIndex:
     def model(self) -> SentenceTransformer | None:
         return self._model
 
-    def add_file(self, relative_path: str):
+    def add_file(self, relative_path: str) -> bool:
         logging.info(f"Indexing `{relative_path}`")
         indexed_file = IndexedFile(self._directory, relative_path)
         idx, needs_update = self._file_needs_update(indexed_file)
 
         if not needs_update:
             logging.info(f"File {relative_path} is already up to date")
-            return
+            return False
 
         if idx:
             self._files.pop(idx)
@@ -77,6 +77,7 @@ class FileIndex:
         self._vector_index.add(embedding.reshape(1, -1))
         
         self._files.append(indexed_file)
+        return True
 
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:
         logging.info(f"Querying: `{query}`")
