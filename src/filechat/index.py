@@ -84,6 +84,7 @@ class FileIndex:
             if not os.path.exists(full_path):
                 idx, _ = self._file_needs_update(file)
                 if idx is not None:
+                    logging.info(f"Removing deleted file {file.path()}")
                     self._delete_file(idx)
 
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:

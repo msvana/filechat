@@ -34,6 +34,12 @@ def main():
         files = index.query(user_message)
         chat.user_message(user_message, files)
 
+        print("---------")
+        print("Files in context: ", end="")
+        print(", ".join(f.path() for f in files))
+        print("---------")
+
+
 
 def get_index(
     directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
