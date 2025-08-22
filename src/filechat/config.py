@@ -13,7 +13,7 @@ class Config:
         return 25 * 1024
 
     def get_embedding_model(self):
-        return "Qwen/Qwen3-Embedding-0.6B"
+        return "nomic-ai/nomic-embed-text-v1.5"
 
     def get_index_store_path(self):
         home = os.environ["HOME"]

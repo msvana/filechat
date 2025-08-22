@@ -72,7 +72,8 @@ class FileIndex:
             self._delete_file(idx)
 
         assert self._model is not None
-        embedding = self._model.encode(indexed_file.content_for_embedding())
+        text = f"search_document: {indexed_file.content_for_embedding()}"
+        embedding = self._model.encode(text)
         self._vector_index.add(embedding.reshape(1, -1))
 
         self._files.append(indexed_file)
@@ -90,7 +91,7 @@ class FileIndex:
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:
         logging.info(f"Querying: `{query}`")
         assert self._model is not None
-        query_embedding = self._model.encode(query)
+        query_embedding = self._model.encode(f"search_query: {query}")
         _, indices = self._vector_index.search(query_embedding.reshape(1, -1), k=top_k)
         matching_files = []
         for idx in indices[0]:

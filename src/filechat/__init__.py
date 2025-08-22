@@ -21,7 +21,7 @@ config = Config()
 
 def main():
     args = arg_parser.parse_args()
-    sentence_transformer = SentenceTransformer(config.get_embedding_model())
+    sentence_transformer = SentenceTransformer(config.get_embedding_model(), trust_remote_code=True)
     index, _ = get_index(args.directory, config, sentence_transformer, args.rebuild)
     chat = Chat()
 
@@ -53,14 +53,14 @@ def get_index(
 
     if rebuild:
         logging.info("Rebuilding index from scratch")
-        index = FileIndex(embedding_model, directory, 1024)
+        index = FileIndex(embedding_model, directory, 768)
     else:
         try:
             index = index_store.load(directory, embedding_model)
             index.clean_old_files()
         except FileNotFoundError:
             logging.info("Index file not found. Creating new index from scratch")
-            index = FileIndex(embedding_model, directory, 1024)
+            index = FileIndex(embedding_model, directory, 768)
 
     num_indexed = 0
     for root, _, files in os.walk(directory):

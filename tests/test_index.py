@@ -32,7 +32,7 @@ def test_directory(config: Config):
 
 @pytest.fixture
 def embedding_model(config: Config):
-    return SentenceTransformer(config.get_embedding_model())
+    return SentenceTransformer(config.get_embedding_model(), trust_remote_code=True)
 
 
 def test_index_files(test_directory, config: Config, embedding_model: SentenceTransformer):
