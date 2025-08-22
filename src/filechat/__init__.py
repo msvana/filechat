@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 from filechat.chat import Chat
 from filechat.config import Config
 from filechat.index import FileIndex, IndexStore
+from filechat.watcher import FileWatcher
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,22 +25,30 @@ def main():
     sentence_transformer = SentenceTransformer(
         config.get_embedding_model(), trust_remote_code=True, device=config.get_device()
     )
+
     index, _ = get_index(args.directory, config, sentence_transformer, args.rebuild)
+    watcher = FileWatcher(index, config)
+    watcher.start()
     chat = Chat()
 
-    while True:
-        user_message = input(">>> ")
-        if user_message == "/exit":
-            break
-        if user_message.strip() == "":
-            continue
-        files = index.query(user_message)
-        chat.user_message(user_message, files)
+    try:
+        while True:
+            user_message = input(">>> ")
+            if user_message == "/exit":
+                break
+            if user_message.strip() == "":
+                continue
+            files = index.query(user_message)
+            chat.user_message(user_message, files)
 
-        print("---------")
-        print("Files in context: ", end="")
-        print(", ".join(f.path() for f in files))
-        print("---------")
+            print("---------")
+            print("Files in context: ", end="")
+            print(", ".join(f.path() for f in files))
+            print("---------")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        watcher.stop()
 
 
 def get_index(

@@ -10,6 +10,7 @@ dependencies = [
   "faiss-cpu>=1.11.0.post1",
   "mistralai>=1.9.3",
   "sentence-transformers>=5.0.0",
+  "watchdog>=6.0.0",
 ]
 
 [project.scripts]
