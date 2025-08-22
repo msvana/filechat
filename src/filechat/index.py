@@ -60,24 +60,27 @@ class FileIndex:
         return self._model
 
     def add_file(self, relative_path: str) -> bool:
-        logging.info(f"Indexing `{relative_path}`")
-        indexed_file = IndexedFile(self._directory, relative_path)
-        idx, needs_update = self._file_needs_update(indexed_file)
+        return self.add_files([relative_path]) > 0
 
-        if not needs_update:
-            logging.info(f"File {relative_path} is already up to date")
-            return False
-
-        if idx:
-            self._delete_file(idx)
-
+    def add_files(self, relative_paths: list[str]) -> int:
+        logging.info(f"Indexing batch of {len(relative_paths)} files")
+        indexed_files = [self._prepare_for_indexing(r) for r in relative_paths]
+        indexed_files = [f for f in indexed_files if f is not None]
+        if not indexed_files:
+            return 0
+        
+        texts = [f"search document: {f.content_for_embedding()}" for f in indexed_files]
         assert self._model is not None
-        text = f"search_document: {indexed_file.content_for_embedding()}"
-        embedding = self._model.encode(text)
-        self._vector_index.add(embedding.reshape(1, -1))
+        logging.info("Creating embeddings")
+        embeddings = self._model.encode(texts)
+        logging.info("Adding to vector index")
+        self._vector_index.add(embeddings)
 
-        self._files.append(indexed_file)
-        return True
+        for f in indexed_files:
+            self._files.append(f)
+            logging.info(f"Indexed file {f.path()}")
+
+        return len(indexed_files)
 
     def clean_old_files(self):
         for file in self._files:
@@ -110,6 +113,19 @@ class FileIndex:
     def _delete_file(self, idx: int):
         self._files.pop(idx)
         self._vector_index.remove_ids(np.array([idx]))
+
+    def _prepare_for_indexing(self, relative_path: str) -> IndexedFile | None:
+        indexed_file = IndexedFile(self._directory, relative_path)
+        idx, needs_update = self._file_needs_update(indexed_file)
+
+        if not needs_update:
+            logging.info(f"File {relative_path} is already up to date")
+            return None
+
+        if idx:
+            self._delete_file(idx)
+
+        return indexed_file
 
 
 class IndexStore:

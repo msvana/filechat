@@ -4,10 +4,10 @@ import os
 class Config:
 
     def get_allowed_suffixes(self):
-        return [".txt", ".json", ".py", ".toml", ".html", ".md"]
+        return [".txt", ".json", ".py", ".toml", ".html", ".md", ".js", ".ts", ".vue"]
 
     def get_ignored_directories(self):
-        return [".git", "__pycache__", ".venv"]
+        return [".git", "__pycache__", ".venv", ".pytest_cache", "node_modules"]
 
     def get_max_file_size(self):
         return 25 * 1024
@@ -18,3 +18,6 @@ class Config:
     def get_index_store_path(self):
         home = os.environ["HOME"]
         return os.path.join(home, ".cache", "filechat")
+
+    def get_index_batch_size(self):
+        return 10

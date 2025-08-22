@@ -63,6 +63,7 @@ def get_index(
             index = FileIndex(embedding_model, directory, 768)
 
     num_indexed = 0
+    batch = []
     for root, _, files in os.walk(directory):
         if any(ignored in root for ignored in ignored_directories):
             continue
@@ -77,8 +78,15 @@ def get_index(
             file_size = os.path.getsize(full_path)
             if file_size > config.get_max_file_size():
                 continue
+            
+            batch.append(relative_path)
 
-            num_indexed += index.add_file(relative_path)
+            if len(batch) >= config.get_index_batch_size():
+                num_indexed += index.add_files(batch)
+                batch = []
+
+    if batch:
+        num_indexed += index.add_files(batch)
 
     index_store.store(index)
     return index, num_indexed
