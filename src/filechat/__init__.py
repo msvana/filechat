@@ -21,7 +21,9 @@ config = Config()
 
 def main():
     args = arg_parser.parse_args()
-    sentence_transformer = SentenceTransformer(config.get_embedding_model(), trust_remote_code=True)
+    sentence_transformer = SentenceTransformer(
+        config.get_embedding_model(), trust_remote_code=True, device=config.get_device()
+    )
     index, _ = get_index(args.directory, config, sentence_transformer, args.rebuild)
     chat = Chat()
 
@@ -38,7 +40,6 @@ def main():
         print("Files in context: ", end="")
         print(", ".join(f.path() for f in files))
         print("---------")
-
 
 
 def get_index(
@@ -78,7 +79,7 @@ def get_index(
             file_size = os.path.getsize(full_path)
             if file_size > config.get_max_file_size():
                 continue
-            
+
             batch.append(relative_path)
 
             if len(batch) >= config.get_index_batch_size():

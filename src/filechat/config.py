@@ -1,5 +1,5 @@
 import os
-
+import torch
 
 class Config:
 
@@ -21,3 +21,6 @@ class Config:
 
     def get_index_batch_size(self):
         return 10
+
+    def get_device(self):
+        return "xpu" if torch.xpu.is_available() else "cpu"

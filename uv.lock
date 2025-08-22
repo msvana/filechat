@@ -1,6 +1,18 @@
 version = 1
 revision = 3
 requires-python = ">=3.12"
+resolution-markers = [
+    "sys_platform == 'linux' and extra != 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu'",
+    "sys_platform == 'win32' and extra != 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu'",
+    "sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu'",
+    "sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu'",
+    "sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu'",
+    "extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu'",
+]
+conflicts = [[
+    { package = "filechat", extra = "cpu" },
+    { package = "filechat", extra = "xpu" },
+]]
 
 [[package]]
 name = "annotated-types"
@@ -18,7 +30,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
     { name = "sniffio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/b4/636b3b65173d3ce9a38ef5f0522789614e590dab6a8d505340a4efe4c567/anyio-4.10.0.tar.gz", hash = "sha256:3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6", size = 213252, upload-time = "2025-08-04T08:54:26.451Z" }
 wheels = [
@@ -135,6 +147,16 @@ dependencies = [
     { name = "sentence-transformers" },
 ]
 
+[package.optional-dependencies]
+cpu = [
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+xpu = [
+    { name = "pytorch-triton-xpu" },
+    { name = "torch", version = "2.7.1+xpu", source = { registry = "https://download.pytorch.org/whl/xpu" } },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -145,8 +167,12 @@ requires-dist = [
     { name = "einops", specifier = ">=0.8.1" },
     { name = "faiss-cpu", specifier = ">=1.11.0.post1" },
     { name = "mistralai", specifier = ">=1.9.3" },
+    { name = "pytorch-triton-xpu", marker = "extra == 'xpu'", specifier = "~=3.3.0", index = "https://download.pytorch.org/whl/xpu" },
     { name = "sentence-transformers", specifier = ">=5.0.0" },
+    { name = "torch", marker = "extra == 'cpu'", specifier = "~=2.7.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "filechat", extra = "cpu" } },
+    { name = "torch", marker = "extra == 'xpu'", specifier = "~=2.7.0", index = "https://download.pytorch.org/whl/xpu", conflict = { package = "filechat", extra = "xpu" } },
 ]
+provides-extras = ["cpu", "xpu"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.1" }]
@@ -228,7 +254,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
     { name = "fsspec" },
-    { name = "hf-xet", marker = "platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'" },
+    { name = "hf-xet", marker = "platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64' or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
     { name = "packaging" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -256,6 +282,127 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f2/97/ebf4da567aa6827c909642694d71c9fcf53e5b504f2d96afea02718862f3/iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7", size = 4793, upload-time = "2025-03-19T20:09:59.721Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e1/e6716421ea10d38022b952c159d5161ca1193197fb744506875fbb87ea7b/iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760", size = 6050, upload-time = "2025-03-19T20:10:01.071Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lib-rt"
+version = "2025.0.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'linux'",
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/80/2a10995012a5d80cca2d8cac5d3a763116f1d57c272ee4f07ca94ba63a1a/intel_cmplr_lib_rt-2025.0.4-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:440cf7cad2ed16f6a0a4589b03447b2d4fdae4f630ea26a4510e1cf5b40b1f1d", size = 45884211, upload-time = "2024-12-12T12:02:44.312Z" },
+    { url = "https://files.pythonhosted.org/packages/99/c3/fa50f44d2b2765002aaf3a116601d2deb5c946da6681ae68d0dd45a7d6ef/intel_cmplr_lib_rt-2025.0.4-py2.py3-none-win_amd64.whl", hash = "sha256:a826508b902318e015f5414e944d8e5eb3436264e44fe1db8ebecc91820bb53e", size = 17271117, upload-time = "2024-12-12T12:02:16.738Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lib-rt"
+version = "2025.0.5"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'win32'",
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/62/69963e0855c9e8c0f0f77da2cdf6fb185568ed938d2175a3e989c49a88a7/intel_cmplr_lib_rt-2025.0.5-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:c6dbc09545927d334a0c5c1d4cbbfe940ea6ff12ae956479f68605489119783b", size = 45884211, upload-time = "2025-03-06T13:43:10.016Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/16/85f1f3c1ab200d369b9774b1b6121d2790c8b8647a135882106bcd3aadf9/intel_cmplr_lib_rt-2025.0.5-py2.py3-none-win_amd64.whl", hash = "sha256:928395dc2dc6e423439ff72e52cd02fc5e79686d5b14ce20f58461d8ed7d950a", size = 17271117, upload-time = "2025-02-11T10:59:27.047Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lib-ur"
+version = "2025.0.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'linux'",
+]
+dependencies = [
+    { name = "umf", marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/d0/0d376a3eb3d5f8d0c0dd828a9f889e485d8ded1f7d501976c72916826cef/intel_cmplr_lib_ur-2025.0.4-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:d36d586721f0cb87b051aca1bf3f653ccee7960f15efb0132e5482d95c5b2c9b", size = 25158275, upload-time = "2024-12-12T12:03:36.653Z" },
+    { url = "https://files.pythonhosted.org/packages/52/52/e7f1d0c3e802aa84e07eeeb57d3b1e538b7ba3a6b66c2f36c898031efdb0/intel_cmplr_lib_ur-2025.0.4-py2.py3-none-win_amd64.whl", hash = "sha256:4e29099b10b2f3b6ab3d45f9f18e14877b20ff96b1694d0edd98a802a7b66f16", size = 1163424, upload-time = "2024-12-12T12:02:34.482Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lib-ur"
+version = "2025.0.5"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "umf", marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/cc/98ab8fa8f787b6241d565287fa50049d99eead0083df028536d537ce8c65/intel_cmplr_lib_ur-2025.0.5-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:d64eceba9dc77890672625cb4994ff42b6b6de907ea54dfcad77748239652cb1", size = 25158272, upload-time = "2025-03-06T13:43:52.704Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/c1/23e258d315f4b39cd923236e6eba90d25f936968be7a0bdfc46b079cef25/intel_cmplr_lib_ur-2025.0.5-py2.py3-none-win_amd64.whl", hash = "sha256:d792c1cafada93aee1ab387e85ecd906a6bb0c0fc5d5fb9b2986c1dcaf301aae", size = 1163425, upload-time = "2025-02-11T10:59:31.57Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lic-rt"
+version = "2025.0.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'linux'",
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/18/77cc45b2e48f35c126f478116b65cad1025cd89ab58038a93fc2ce03a6e9/intel_cmplr_lic_rt-2025.0.4-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:943d03ef2028cdb33140c84bad35b45d02186617ac0cd15849d179764132408a", size = 18913, upload-time = "2024-12-12T12:02:36.833Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/16/6b9c5281cd437e67b319938aac29626fade0aa821572d6417ca906e910b6/intel_cmplr_lic_rt-2025.0.4-py2.py3-none-win_amd64.whl", hash = "sha256:a9073f2b513a4dc187d93a9e8d88b2d4370573d37dd0fbe6e1fe886f6f1e10a6", size = 49547, upload-time = "2024-12-12T12:02:20.766Z" },
+]
+
+[[package]]
+name = "intel-cmplr-lic-rt"
+version = "2025.0.5"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'win32'",
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/af/fe/b01194ef6087cf5069325bb65550826048d4a7b46fe562e4a44f1f035448/intel_cmplr_lic_rt-2025.0.5-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:1339f5c33d16b7f8e951c8b904f22e8c635780a05c4892210b343d185bb60534", size = 18913, upload-time = "2025-03-06T13:43:04.375Z" },
+    { url = "https://files.pythonhosted.org/packages/83/b9/7ac88e49a14026446953c0d2cdf32198b043a10f0b43ad02e36c7b273501/intel_cmplr_lic_rt-2025.0.5-py2.py3-none-win_amd64.whl", hash = "sha256:2a37b5be844790664b7bf67aef33058103368face8ce1ff72643d6e2ffc3efbf", size = 49547, upload-time = "2025-02-11T10:59:46.543Z" },
+]
+
+[[package]]
+name = "intel-pti"
+version = "0.10.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f0/f2/313e46be14a27d4fb6eaab683a0c7589b0227549e2bf596fa6ccc0df8f8f/intel_pti-0.10.1-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:7e12361e8ac18996258c9d7f9ee831372c1c1c85028fa8502fb257e1dadf1de2", size = 678688, upload-time = "2025-02-20T11:29:43.507Z" },
+    { url = "https://files.pythonhosted.org/packages/da/49/ac4c5413ae249cc79c0f04d926942a2802d3e5b6186d4bfe67db841f53f9/intel_pti-0.10.1-py2.py3-none-win_amd64.whl", hash = "sha256:bf9418aff05dd6807f3130eaae874ab2c5f79bcbfa1eaae7ba9b5c8ff8290038", size = 437518, upload-time = "2025-02-20T11:29:40.533Z" },
+]
+
+[[package]]
+name = "intel-sycl-rt"
+version = "2025.0.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'linux'",
+]
+dependencies = [
+    { name = "intel-cmplr-lib-rt", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lib-ur", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lic-rt", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/2b/3b99709cf8dd3304d05b853797a6fa962394ccf520536dc8e5eb9d3d9b1f/intel_sycl_rt-2025.0.4-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:85c5fd6029f62e8361af1d9ddb0f6c6f9cf4912bbe9ad684f89e9e5842128879", size = 12356130, upload-time = "2024-12-12T12:03:18.87Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/4d/04f82c52676e97bddff8f0a4b2b66b0d75c971c9605c6f0c4ca2d0041661/intel_sycl_rt-2025.0.4-py2.py3-none-win_amd64.whl", hash = "sha256:fad1a7dee4d1d0469fced09079d86df1c71099518e2cc13f2edb633ac7bc592f", size = 9528469, upload-time = "2024-12-12T12:02:24.491Z" },
+]
+
+[[package]]
+name = "intel-sycl-rt"
+version = "2025.0.5"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "intel-cmplr-lib-rt", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lib-ur", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lic-rt", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/40/eb528ccbb04c19c2aba92da8857a2461b4781b56d9845aa12e68dcae6b6f/intel_sycl_rt-2025.0.5-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:a259ad62a3a93b27d85f8cd034f9953be75f904a44e6b516811c09c0a3535012", size = 12356129, upload-time = "2025-03-06T13:44:04.846Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/11/46cb85d052bf13153f2cb3994dbfda6116a06bff55d209d04b3f424d94d6/intel_sycl_rt-2025.0.5-py2.py3-none-win_amd64.whl", hash = "sha256:10a322b5bb9a180cbeea45fe2c8603bff55f4dedf6302fff7f66dafc191ff580", size = 10786985, upload-time = "2025-02-11T10:59:35.055Z" },
 ]
 
 [[package]]
@@ -415,139 +562,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nvidia-cublas-cu12"
-version = "12.6.4.1"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/eb/ff4b8c503fa1f1796679dce648854d58751982426e4e4b37d6fce49d259c/nvidia_cublas_cu12-12.6.4.1-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:08ed2686e9875d01b58e3cb379c6896df8e76c75e0d4a7f7dace3d7b6d9ef8eb", size = 393138322, upload-time = "2024-11-20T17:40:25.65Z" },
-]
-
-[[package]]
-name = "nvidia-cuda-cupti-cu12"
-version = "12.6.80"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/60/7b6497946d74bcf1de852a21824d63baad12cd417db4195fc1bfe59db953/nvidia_cuda_cupti_cu12-12.6.80-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:6768bad6cab4f19e8292125e5f1ac8aa7d1718704012a0e3272a6f61c4bce132", size = 8917980, upload-time = "2024-11-20T17:36:04.019Z" },
-    { url = "https://files.pythonhosted.org/packages/a5/24/120ee57b218d9952c379d1e026c4479c9ece9997a4fb46303611ee48f038/nvidia_cuda_cupti_cu12-12.6.80-py3-none-manylinux2014_x86_64.whl", hash = "sha256:a3eff6cdfcc6a4c35db968a06fcadb061cbc7d6dde548609a941ff8701b98b73", size = 8917972, upload-time = "2024-10-01T16:58:06.036Z" },
-]
-
-[[package]]
-name = "nvidia-cuda-nvrtc-cu12"
-version = "12.6.77"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/2e/46030320b5a80661e88039f59060d1790298b4718944a65a7f2aeda3d9e9/nvidia_cuda_nvrtc_cu12-12.6.77-py3-none-manylinux2014_x86_64.whl", hash = "sha256:35b0cc6ee3a9636d5409133e79273ce1f3fd087abb0532d2d2e8fff1fe9efc53", size = 23650380, upload-time = "2024-10-01T17:00:14.643Z" },
-]
-
-[[package]]
-name = "nvidia-cuda-runtime-cu12"
-version = "12.6.77"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/23/e717c5ac26d26cf39a27fbc076240fad2e3b817e5889d671b67f4f9f49c5/nvidia_cuda_runtime_cu12-12.6.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ba3b56a4f896141e25e19ab287cd71e52a6a0f4b29d0d31609f60e3b4d5219b7", size = 897690, upload-time = "2024-11-20T17:35:30.697Z" },
-    { url = "https://files.pythonhosted.org/packages/f0/62/65c05e161eeddbafeca24dc461f47de550d9fa8a7e04eb213e32b55cfd99/nvidia_cuda_runtime_cu12-12.6.77-py3-none-manylinux2014_x86_64.whl", hash = "sha256:a84d15d5e1da416dd4774cb42edf5e954a3e60cc945698dc1d5be02321c44dc8", size = 897678, upload-time = "2024-10-01T16:57:33.821Z" },
-]
-
-[[package]]
-name = "nvidia-cudnn-cu12"
-version = "9.5.1.17"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nvidia-cublas-cu12" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/78/4535c9c7f859a64781e43c969a3a7e84c54634e319a996d43ef32ce46f83/nvidia_cudnn_cu12-9.5.1.17-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:30ac3869f6db17d170e0e556dd6cc5eee02647abc31ca856634d5a40f82c15b2", size = 570988386, upload-time = "2024-10-25T19:54:26.39Z" },
-]
-
-[[package]]
-name = "nvidia-cufft-cu12"
-version = "11.3.0.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/16/73727675941ab8e6ffd86ca3a4b7b47065edcca7a997920b831f8147c99d/nvidia_cufft_cu12-11.3.0.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ccba62eb9cef5559abd5e0d54ceed2d9934030f51163df018532142a8ec533e5", size = 200221632, upload-time = "2024-11-20T17:41:32.357Z" },
-    { url = "https://files.pythonhosted.org/packages/60/de/99ec247a07ea40c969d904fc14f3a356b3e2a704121675b75c366b694ee1/nvidia_cufft_cu12-11.3.0.4-py3-none-manylinux2014_x86_64.whl", hash = "sha256:768160ac89f6f7b459bee747e8d175dbf53619cfe74b2a5636264163138013ca", size = 200221622, upload-time = "2024-10-01T17:03:58.79Z" },
-]
-
-[[package]]
-name = "nvidia-cufile-cu12"
-version = "1.11.1.6"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/66/cc9876340ac68ae71b15c743ddb13f8b30d5244af344ec8322b449e35426/nvidia_cufile_cu12-1.11.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:cc23469d1c7e52ce6c1d55253273d32c565dd22068647f3aa59b3c6b005bf159", size = 1142103, upload-time = "2024-11-20T17:42:11.83Z" },
-]
-
-[[package]]
-name = "nvidia-curand-cu12"
-version = "10.3.7.77"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/1b/44a01c4e70933637c93e6e1a8063d1e998b50213a6b65ac5a9169c47e98e/nvidia_curand_cu12-10.3.7.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:a42cd1344297f70b9e39a1e4f467a4e1c10f1da54ff7a85c12197f6c652c8bdf", size = 56279010, upload-time = "2024-11-20T17:42:50.958Z" },
-    { url = "https://files.pythonhosted.org/packages/4a/aa/2c7ff0b5ee02eaef890c0ce7d4f74bc30901871c5e45dee1ae6d0083cd80/nvidia_curand_cu12-10.3.7.77-py3-none-manylinux2014_x86_64.whl", hash = "sha256:99f1a32f1ac2bd134897fc7a203f779303261268a65762a623bf30cc9fe79117", size = 56279000, upload-time = "2024-10-01T17:04:45.274Z" },
-]
-
-[[package]]
-name = "nvidia-cusolver-cu12"
-version = "11.7.1.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cusparse-cu12" },
-    { name = "nvidia-nvjitlink-cu12" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/6e/c2cf12c9ff8b872e92b4a5740701e51ff17689c4d726fca91875b07f655d/nvidia_cusolver_cu12-11.7.1.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:e9e49843a7707e42022babb9bcfa33c29857a93b88020c4e4434656a655b698c", size = 158229790, upload-time = "2024-11-20T17:43:43.211Z" },
-    { url = "https://files.pythonhosted.org/packages/9f/81/baba53585da791d043c10084cf9553e074548408e04ae884cfe9193bd484/nvidia_cusolver_cu12-11.7.1.2-py3-none-manylinux2014_x86_64.whl", hash = "sha256:6cf28f17f64107a0c4d7802be5ff5537b2130bfc112f25d5a30df227058ca0e6", size = 158229780, upload-time = "2024-10-01T17:05:39.875Z" },
-]
-
-[[package]]
-name = "nvidia-cusparse-cu12"
-version = "12.5.4.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/1e/b8b7c2f4099a37b96af5c9bb158632ea9e5d9d27d7391d7eb8fc45236674/nvidia_cusparse_cu12-12.5.4.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:7556d9eca156e18184b94947ade0fba5bb47d69cec46bf8660fd2c71a4b48b73", size = 216561367, upload-time = "2024-11-20T17:44:54.824Z" },
-    { url = "https://files.pythonhosted.org/packages/43/ac/64c4316ba163e8217a99680c7605f779accffc6a4bcd0c778c12948d3707/nvidia_cusparse_cu12-12.5.4.2-py3-none-manylinux2014_x86_64.whl", hash = "sha256:23749a6571191a215cb74d1cdbff4a86e7b19f1200c071b3fcf844a5bea23a2f", size = 216561357, upload-time = "2024-10-01T17:06:29.861Z" },
-]
-
-[[package]]
-name = "nvidia-cusparselt-cu12"
-version = "0.6.3"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/9a/72ef35b399b0e183bc2e8f6f558036922d453c4d8237dab26c666a04244b/nvidia_cusparselt_cu12-0.6.3-py3-none-manylinux2014_x86_64.whl", hash = "sha256:e5c8a26c36445dd2e6812f1177978a24e2d37cacce7e090f297a688d1ec44f46", size = 156785796, upload-time = "2024-10-15T21:29:17.709Z" },
-]
-
-[[package]]
-name = "nvidia-nccl-cu12"
-version = "2.26.2"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/ca/f42388aed0fddd64ade7493dbba36e1f534d4e6fdbdd355c6a90030ae028/nvidia_nccl_cu12-2.26.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:694cf3879a206553cc9d7dbda76b13efaf610fdb70a50cba303de1b0d1530ac6", size = 201319755, upload-time = "2025-03-13T00:29:55.296Z" },
-]
-
-[[package]]
-name = "nvidia-nvjitlink-cu12"
-version = "12.6.85"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/d7/c5383e47c7e9bf1c99d5bd2a8c935af2b6d705ad831a7ec5c97db4d82f4f/nvidia_nvjitlink_cu12-12.6.85-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:eedc36df9e88b682efe4309aa16b5b4e78c2407eac59e8c10a6a47535164369a", size = 19744971, upload-time = "2024-11-20T17:46:53.366Z" },
-]
-
-[[package]]
-name = "nvidia-nvtx-cu12"
-version = "12.6.77"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/9a/fff8376f8e3d084cd1530e1ef7b879bb7d6d265620c95c1b322725c694f4/nvidia_nvtx_cu12-12.6.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:b90bed3df379fa79afbd21be8e04a0314336b8ae16768b58f2d34cb1d04cd7d2", size = 89276, upload-time = "2024-11-20T17:38:27.621Z" },
-    { url = "https://files.pythonhosted.org/packages/9e/4e/0d0c945463719429b7bd21dece907ad0bde437a2ff12b9b12fee94722ab0/nvidia_nvtx_cu12-12.6.77-py3-none-manylinux2014_x86_64.whl", hash = "sha256:6574241a3ec5fdc9334353ab8c479fe75841dbe8f4532a8fc97ce63503330ba1", size = 89265, upload-time = "2024-10-01T17:00:38.172Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -702,7 +716,7 @@ name = "pytest"
 version = "8.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -723,6 +737,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
+]
+
+[[package]]
+name = "pytorch-triton-xpu"
+version = "3.3.1"
+source = { registry = "https://download.pytorch.org/whl/xpu" }
+dependencies = [
+    { name = "setuptools", marker = "extra == 'extra-8-filechat-xpu'" },
+]
+wheels = [
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:aa5c3ec21a89e967d1dfe61e3d5b1c1ae9620c871ed804771d3378d6a44066f2" },
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp312-cp312-win_amd64.whl", hash = "sha256:b09ca59ce52d6d27b1510df783cde222b703a71857a6fa953f1f155f9f50811a" },
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d1c6f522e11112a311b1a61ba7b40b43ad8305675fa29153017ccb1ad0b6816d" },
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp313-cp313-win_amd64.whl", hash = "sha256:1260c4a4bad426b6cd3c8f3e1a21835381c6f217bf434bcb55fedec08a206dea" },
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8a848f407d2e8ed135fc7643287c534bd26230ce9f24880ff3c8f4eb28710062" },
+    { url = "https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp313-cp313t-win_amd64.whl", hash = "sha256:6c70828958ec58f226f9f859f63efdccfc36a88237beb83e6be875fa2464be3e" },
 ]
 
 [[package]]
@@ -932,7 +962,10 @@ dependencies = [
     { name = "pillow" },
     { name = "scikit-learn" },
     { name = "scipy" },
-    { name = "torch" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "torch", version = "2.7.1+xpu", source = { registry = "https://download.pytorch.org/whl/xpu" }, marker = "extra == 'extra-8-filechat-xpu'" },
     { name = "tqdm" },
     { name = "transformers" },
     { name = "typing-extensions" },
@@ -982,6 +1015,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tcmlib"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/6e/e9544e6ddb3640e92d9937689e9e33018503ddbc069eeb2e6a7581870591/tcmlib-1.2.0-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:dee9a0665ffa0a74f0ec72844ef7d82e9178ebf6980a76ac65906303d5ed4d03", size = 4160997, upload-time = "2024-10-25T10:59:37.067Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/c8/c2a7bb169e21521a5bc82d955b30a064e266ab72485ac2dc33cd6ad153ea/tcmlib-1.2.0-py2.py3-none-win_amd64.whl", hash = "sha256:f751e005fd815ed0efeb87d4523f6a0938c5671e59ac935614f42d8ebb6489c9", size = 338379, upload-time = "2024-10-25T10:59:32.959Z" },
+]
+
+[[package]]
 name = "threadpoolctl"
 version = "3.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1018,30 +1060,37 @@ wheels = [
 [[package]]
 name = "torch"
 version = "2.7.1"
+source = { registry = "https://download.pytorch.org/whl/cpu" }
+resolution-markers = [
+    "sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "filelock", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "fsspec", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "jinja2", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "networkx", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "setuptools", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "sympy", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "typing-extensions", marker = "(sys_platform == 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:7b4f8b2b83bd08f7d399025a9a7b323bdbb53d20566f1e0d584689bb92d82f9a" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp313-cp313t-macosx_14_0_arm64.whl", hash = "sha256:95af97e7b2cecdc89edc0558962a51921bf9c61538597dbec6b7cc48d31e2e13" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:7ecd868a086468e1bcf74b91db425c1c2951a9cfcd0592c4c73377b7e42485ae" },
+]
+
+[[package]]
+name = "torch"
+version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "filelock" },
-    { name = "fsspec" },
-    { name = "jinja2" },
-    { name = "networkx" },
-    { name = "nvidia-cublas-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cuda-cupti-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cuda-nvrtc-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cuda-runtime-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cudnn-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cufft-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cufile-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-curand-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cusolver-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cusparse-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-cusparselt-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-nccl-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-nvjitlink-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "nvidia-nvtx-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "setuptools" },
-    { name = "sympy" },
-    { name = "triton", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "typing-extensions" },
+    { name = "filelock", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "fsspec", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "jinja2", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "networkx", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "setuptools", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "sympy", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
+    { name = "typing-extensions", marker = "(extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu') or (extra != 'extra-8-filechat-cpu' and extra != 'extra-8-filechat-xpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/93/fb505a5022a2e908d81fe9a5e0aa84c86c0d5f408173be71c6018836f34e/torch-2.7.1-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:27ea1e518df4c9de73af7e8a720770f3628e7f667280bce2be7a16292697e3fa", size = 98948276, upload-time = "2025-06-04T17:39:12.852Z" },
@@ -1059,11 +1108,79 @@ wheels = [
 ]
 
 [[package]]
+name = "torch"
+version = "2.7.1+cpu"
+source = { registry = "https://download.pytorch.org/whl/cpu" }
+resolution-markers = [
+    "sys_platform != 'darwin'",
+]
+dependencies = [
+    { name = "filelock", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "fsspec", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "jinja2", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "networkx", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "setuptools", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "sympy", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "typing-extensions", marker = "(sys_platform != 'darwin' and extra == 'extra-8-filechat-cpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+]
+wheels = [
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:3bf2db5adf77b433844f080887ade049c4705ddf9fe1a32023ff84ff735aa5ad" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:8f8b3cfc53010a4b4a3c7ecb88c212e9decc4f5eeb6af75c3c803937d2d60947" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-win_amd64.whl", hash = "sha256:0bc887068772233f532b51a3e8c8cfc682ae62bef74bf4e0c53526c8b9e4138f" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-win_arm64.whl", hash = "sha256:a2618775f32eb4126c5b2050686da52001a08cffa331637d9cf51c8250931e00" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:eb17646792ac4374ffc87e42369f45d21eff17c790868963b90483ef0b6db4ef" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:84ea1f6a1d15663037d01b121d6e33bb9da3c90af8e069e5072c30f413455a57" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313-win_amd64.whl", hash = "sha256:b66f77f6f67317344ee083aa7ac4751a14395fcb38060d564bf513978d267153" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:56136a2aca6707df3c8811e46ea2d379eaafd18e656e2fd51e8e4d0ca995651b" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:355614185a2aea7155f9c88a20bfd49de5f3063866f3cf9b2f21b6e9e59e31e0" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313t-win_amd64.whl", hash = "sha256:464bca1bc9452f2ccd676514688896e66b9488f2a0268ecd3ac497cf09c5aac1" },
+]
+
+[[package]]
+name = "torch"
+version = "2.7.1+xpu"
+source = { registry = "https://download.pytorch.org/whl/xpu" }
+resolution-markers = [
+    "sys_platform == 'linux'",
+    "sys_platform == 'win32'",
+    "sys_platform != 'linux' and sys_platform != 'win32'",
+]
+dependencies = [
+    { name = "filelock", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "fsspec", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "intel-cmplr-lib-rt", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lib-rt", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lib-ur", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lib-ur", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lic-rt", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-cmplr-lic-rt", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-pti", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "intel-sycl-rt", version = "2025.0.4", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "intel-sycl-rt", version = "2025.0.5", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'win32' and extra == 'extra-8-filechat-xpu') or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
+    { name = "jinja2", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "networkx", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "pytorch-triton-xpu", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "setuptools", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "sympy", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "tcmlib", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "typing-extensions", marker = "extra == 'extra-8-filechat-xpu'" },
+    { name = "umf", marker = "extra == 'extra-8-filechat-xpu'" },
+]
+wheels = [
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp312-cp312-linux_x86_64.whl", hash = "sha256:b443df40bc9cb7d648a9f8f9ed1d5c3a1203e561ebd0a61dd55fb8a58833d5ec" },
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp312-cp312-win_amd64.whl", hash = "sha256:9b65dc8562521b60d77aa653132bc03a19da0291318fcf919faa3f03080d8f7e" },
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp313-cp313-linux_x86_64.whl", hash = "sha256:412b58ffcceebea399c9a1bcdb22896aa10385c2650a8c4f8a677fb11c49b448" },
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp313-cp313-win_amd64.whl", hash = "sha256:cd3669fee311bc3ee5501d696bf989226a6f2bf957d120a04881a07af05526d6" },
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp313-cp313t-linux_x86_64.whl", hash = "sha256:62be63ae0f255c2a51838bfc44ae1fbab167db6f3a4586fb9e76f8d33a5ed886" },
+    { url = "https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp313-cp313t-win_amd64.whl", hash = "sha256:f97b93201e981b299e9e68c7cff457dd4b6d6ac435ea800418bfb0c1517657c5" },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-8-filechat-cpu' and extra == 'extra-8-filechat-xpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737, upload-time = "2024-11-24T20:12:22.481Z" }
 wheels = [
@@ -1092,19 +1209,6 @@ wheels = [
 ]
 
 [[package]]
-name = "triton"
-version = "3.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "setuptools" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/5f/950fb373bf9c01ad4eb5a8cd5eaf32cdf9e238c02f9293557a2129b9c4ac/triton-3.3.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9999e83aba21e1a78c1f36f21bce621b77bcaa530277a50484a7cb4a822f6e43", size = 155669138, upload-time = "2025-05-29T23:39:51.771Z" },
-    { url = "https://files.pythonhosted.org/packages/74/1f/dfb531f90a2d367d914adfee771babbd3f1a5b26c3f5fbc458dee21daa78/triton-3.3.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b89d846b5a4198317fec27a5d3a609ea96b6d557ff44b56c23176546023c4240", size = 155673035, upload-time = "2025-05-29T23:40:02.468Z" },
-    { url = "https://files.pythonhosted.org/packages/28/71/bd20ffcb7a64c753dc2463489a61bf69d531f308e390ad06390268c4ea04/triton-3.3.1-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a3198adb9d78b77818a5388bff89fa72ff36f9da0bc689db2f0a651a67ce6a42", size = 155735832, upload-time = "2025-05-29T23:40:10.522Z" },
-]
-
-[[package]]
 name = "typing-extensions"
 version = "4.14.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1123,6 +1227,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f8/b1/0c11f5058406b3af7609f121aaa6b609744687f1d158b3c3a5bf4cc94238/typing_inspection-0.4.1.tar.gz", hash = "sha256:6ae134cc0203c33377d43188d4064e9b357dba58cff3185f22924610e70a9d28", size = 75726, upload-time = "2025-05-21T18:55:23.885Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/69/cd203477f944c353c31bade965f880aa1061fd6bf05ded0726ca845b6ff7/typing_inspection-0.4.1-py3-none-any.whl", hash = "sha256:389055682238f53b04f7badcb49b989835495a96700ced5dab2d8feae4b26f51", size = 14552, upload-time = "2025-05-21T18:55:22.152Z" },
+]
+
+[[package]]
+name = "umf"
+version = "0.9.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tcmlib", marker = "extra == 'extra-8-filechat-xpu'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/19/cef361ce4c5c1079f90d35ed853996f94cef5e68bc29b8e7d11a28b0c53b/umf-0.9.1-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:2f7b8eb45e182b24823be420063799ea89b4f1cad6b9510b1fc6e04b809c7ec2", size = 161551, upload-time = "2024-11-19T15:35:00.583Z" },
+    { url = "https://files.pythonhosted.org/packages/56/2a/3ccea66d7390f3b6407b396ec289d5acad7f8f92a1bd8b66b58d376fc019/umf-0.9.1-py2.py3-none-win_amd64.whl", hash = "sha256:9d1336d63c7a6b36af1f76dab942a760168da519a1bfe6941fc6418198b10820", size = 72212, upload-time = "2024-11-19T15:36:28.366Z" },
 ]
 
 [[package]]
