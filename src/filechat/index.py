@@ -8,6 +8,8 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from filechat.config import Config
+
 
 class IndexedFile:
     EMBEDDING_TEMPLATE = dedent("""\
@@ -165,3 +167,53 @@ class IndexStore:
         file_name = f"{file_hash}.pickle"
         file_path = os.path.join(self._directory, file_name)
         return file_path
+
+def get_index(
+    directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
+) -> tuple[FileIndex, int]:
+    allowed_suffixes = config.get_allowed_suffixes()
+    ignored_directories = config.get_ignored_directories()
+    index_store = IndexStore(config.get_index_store_path())
+
+    if not os.path.isdir(directory):
+        raise ValueError(f"The provided path '{directory}' is not a valid directory.")
+
+    if rebuild:
+        logging.info("Rebuilding index from scratch")
+        index = FileIndex(embedding_model, directory, 768)
+    else:
+        try:
+            index = index_store.load(directory, embedding_model)
+            index.clean_old_files()
+        except FileNotFoundError:
+            logging.info("Index file not found. Creating new index from scratch")
+            index = FileIndex(embedding_model, directory, 768)
+
+    num_indexed = 0
+    batch = []
+    for root, _, files in os.walk(directory):
+        if any(ignored in root for ignored in ignored_directories):
+            continue
+
+        for file in files:
+            full_path = os.path.join(root, file)
+            relative_path = os.path.relpath(full_path, directory)
+
+            if all(not file.endswith(suffix) for suffix in allowed_suffixes):
+                continue
+
+            file_size = os.path.getsize(full_path)
+            if file_size > config.get_max_file_size():
+                continue
+
+            batch.append(relative_path)
+
+            if len(batch) >= config.get_index_batch_size():
+                num_indexed += index.add_files(batch)
+                batch = []
+
+    if batch:
+        num_indexed += index.add_files(batch)
+
+    index_store.store(index)
+    return index, num_indexed
