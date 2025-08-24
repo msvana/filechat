@@ -28,6 +28,14 @@ class FilechatApp(App):
             padding: 0 1;
             margin: 0;
         }
+
+        Input {
+            border: solid blue;
+        }
+
+        VerticalScroll {
+            scrollbar-size: 0 0;
+        }
     """
 
     def __init__(self, chat: Chat, index: FileIndex):
