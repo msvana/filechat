@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chat = "filechat:main"
+filechat = "filechat:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -63,4 +63,6 @@ enable-unstable-feature = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.4.1"]
+dev = [
+    "pytest>=8.4.1",
+]
