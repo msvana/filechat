@@ -20,6 +20,7 @@ arg_parser.add_argument(
 
 def main():
     config = Config()
+    print(f"Using device {config.get_device()}")
     args = arg_parser.parse_args()
 
     sentence_transformer = SentenceTransformer(

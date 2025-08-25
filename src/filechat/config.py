@@ -23,4 +23,8 @@ class Config:
         return 10
 
     def get_device(self):
-        return "xpu" if torch.xpu.is_available() else "cpu"
+        if torch.xpu.is_available():
+            return "xpu"
+        if torch.cuda.is_available():
+            return "cuda"
+        return "cpu"

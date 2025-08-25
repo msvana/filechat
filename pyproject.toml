@@ -24,15 +24,17 @@ build-backend = "hatchling.build"
 [project.optional-dependencies]
 cpu = ["torch~=2.7.0"]
 xpu = ["pytorch-triton-xpu~=3.3.0", "torch~=2.7.0"]
+cuda = ["torch~=2.7.0"]
 
 [tool.uv]
-conflicts = [[{ extra = "cpu" }, { extra = "xpu" }]]
+conflicts = [[{ extra = "cpu" }, { extra = "xpu" }, { extra = "cuda" }]]
 
 [tool.uv.sources]
 pytorch-triton-xpu = [{ index = "pytorch-xpu" }]
 torch = [
   { index = "pytorch-cpu", extra = "cpu" },
   { index = "pytorch-xpu", extra = "xpu" },
+  { index = "pytorch-cuda", extra = "cuda" },
 ]
 
 [[tool.uv.index]]
@@ -43,6 +45,11 @@ explicit = true
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.black]
