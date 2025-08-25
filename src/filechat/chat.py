@@ -35,10 +35,9 @@ class Chat:
         for chunk in response:
             chunk_content = chunk.data.choices[0].delta.content
             response_str += str(chunk_content)
-            print(chunk_content, end="")
+            yield str(chunk_content)
 
         self._message_history.append({"role": "assistant", "content": response_str})
-        print()
 
     def _get_context_message(self, files: list[IndexedFile]) -> dict:
         message = "<context>"
