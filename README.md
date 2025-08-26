@@ -9,7 +9,6 @@ It allows you to chat about files in your local folder while maintaining full co
 - **Contextual Chat**: Ask questions about your project with AI that understands your codebase
 - **Real-time Updates**: Automatically detects and indexes file changes
 - **Configurable**: Customize which files to index and how to process them
--
 
 ## Installation
 
