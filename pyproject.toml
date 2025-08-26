@@ -36,6 +36,7 @@ torch = [
   { index = "pytorch-xpu", extra = "xpu" },
   { index = "pytorch-cuda", extra = "cuda" },
 ]
+shiv = { path = "../shiv", editable = true }
 
 [[tool.uv.index]]
 name = "pytorch-xpu"
@@ -66,3 +67,4 @@ enable-unstable-feature = [
 dev = [
     "pytest>=8.4.1",
 ]
+
