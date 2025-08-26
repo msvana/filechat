@@ -7,7 +7,6 @@ from filechat.index import IndexedFile
 
 
 class Chat:
-    MODEL = "codestral-2508"
     SYSTEM_MESSAGE = dedent("""\
     You are a local project assistant. Your task is to assist the user with various projects. 
     They can ask you question to understand the project or for suggestions on how to improve the projects.
@@ -17,16 +16,21 @@ class Chat:
     to create a better response.
     """)
 
-    def __init__(self):
+    def __init__(self, model: str, api_key: str | None):
         self._message_history = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
-        self._client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
+        self._model = model
+        assert api_key is not None, (
+            "Please provide an API key, either in the config file or in the MISTRAL_API_KEY"
+            " environment variable"
+        )
+        self._client = Mistral(api_key=api_key)
 
     def user_message(self, message: str, files: list[IndexedFile]):
         user_message = {"role": "user", "content": message}
         context_message = self._get_context_message(files)
         self._message_history.append(user_message)
         response = self._client.chat.stream(
-            model=self.MODEL,
+            model=self._model,
             messages=self._message_history + [context_message],  # type: ignore
         )
 

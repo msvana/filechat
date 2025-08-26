@@ -9,6 +9,7 @@ dependencies = [
   "einops>=0.8.1",
   "faiss-cpu>=1.11.0.post1",
   "mistralai>=1.9.3",
+  "pydantic>=2.11.7",
   "sentence-transformers>=5.0.0",
   "textual>=5.3.0",
   "watchdog>=6.0.0",

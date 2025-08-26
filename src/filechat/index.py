@@ -70,7 +70,7 @@ class FileIndex:
         indexed_files = [f for f in indexed_files if f is not None]
         if not indexed_files:
             return 0
-        
+
         texts = [f"search document: {f.content_for_embedding()}" for f in indexed_files]
         assert self._model is not None
         logging.info("Creating embeddings")
@@ -168,12 +168,13 @@ class IndexStore:
         file_path = os.path.join(self._directory, file_name)
         return file_path
 
+
 def get_index(
     directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
 ) -> tuple[FileIndex, int]:
-    allowed_suffixes = config.get_allowed_suffixes()
-    ignored_directories = config.get_ignored_directories()
-    index_store = IndexStore(config.get_index_store_path())
+    allowed_suffixes = config.allowed_suffixes
+    ignored_directories = config.ignored_dirs
+    index_store = IndexStore(config.index_store_path)
 
     if not os.path.isdir(directory):
         raise ValueError(f"The provided path '{directory}' is not a valid directory.")
@@ -203,12 +204,12 @@ def get_index(
                 continue
 
             file_size = os.path.getsize(full_path)
-            if file_size > config.get_max_file_size():
+            if file_size > config.max_file_size_kb * 1024:
                 continue
 
             batch.append(relative_path)
 
-            if len(batch) >= config.get_index_batch_size():
+            if len(batch) >= config.index_batch_size:
                 num_indexed += index.add_files(batch)
                 batch = []
 

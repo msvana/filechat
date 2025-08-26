@@ -11,8 +11,8 @@ from filechat.index import FileIndex
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, index: FileIndex, config: Config):
         self._index = index
-        self._allowed_suffixes = config.get_allowed_suffixes()
-        self._ignored_directories = config.get_ignored_directories()
+        self._allowed_suffixes = config.allowed_suffixes
+        self._ignored_directories = config.ignored_dirs
 
     def on_modified(self, event: FileSystemEvent):
         if event.is_directory:
