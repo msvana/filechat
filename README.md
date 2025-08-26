@@ -1,40 +1,68 @@
 # FileChat
 
-FileChat is an AI assistant designed to help users with various local projects.
-It allows you to chat about files in your local folder.
-
-## Motivation
-
-Most AI agents focus on directly modifying your code.
-
-I don't like that. I want a tool that allows me to seamlessly chat
-about my projects with an LLM, but that doesn't let the LLM to directly make changes.
-I want to be in control of my code.
+FileChat is an AI assistant designed to help users understand and improve their local projects.
+It allows you to chat about files in your local folder while maintaining full control over your code.
 
 ## Features
 
-- **Indexing Files**: FileChat can index files in a directory, allowing it to understand the structure and content of the project.
-- **Querying Files**: Users can ask questions about the project, and FileChat will provide relevant information based on the indexed files.
-- **Improving Projects**: FileChat can suggest improvements to the project based on the content of the files and the user's queries.
+- **Project Indexing**: Creates a searchable index of your project files
+- **Contextual Chat**: Ask questions about your project with AI that understands your codebase
+- **Real-time Updates**: Automatically detects and indexes file changes
+- **Configurable**: Customize which files to index and how to process them
+-
 
 ## Installation
 
-The project is in an early stage of development. For now you can install the project by cloning the repository and
-replicating the environment using [`uv`](https://docs.astral.sh/uv/):
+### Prerequisites
+
+- Python 3.12 or higher
+- A [Mistral AI](https://mistral.ai/) API key stored in the `MISTRAL_API_KEY` environment variable
+
+### Installation steps
+
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/msvana/filechat
+cd filechat
+```
+
+2. Install dependencies using [`uv`](https://docs.astral.sh/uv/):
+
+```bash
 uv sync
+```
+
+3. (Optional) Install GPU support if available:
+
+```bash
+# CUDA (NVIDIA)
+uv sync --extra cuda
+
+# XPU (Intel Arc)
+uv sync --extra xpu
 ```
 
 ## Usage
 
-FileChat uses [Mistral AI](https://mistral.ai/)'s LLMs.
-You need to store a Mistral AI API key in the `MISTRAL_API_KEY` environment
-variable. Then you can invoke FileChat, with the following command:
-
 ```bash
-uv run index /path/to/your/project
+uv run filechat /path/to/your/project
+```
+
+## Configuration
+
+On the first run, FileChat creates a configuration file at `~/.config/filechat.json`. You can modify it as you need.
+Here is a full example:
+
+```json
+{
+    "max_file_size_kb": 30,
+    "ignored_dirs": [".git", "__pycache__", ".venv", ".pytest_cache", "node_modules"],
+    "allowed_suffixes": [".txt", ".json", ".py", ".toml", ".html", ".md", ".js", ".ts", ".vue"],
+    "index_store_path": "/home/milos/.cache/filechat",
+    "model": "mistral-medium-2508",
+    "api_key": "[MISTRAL_API_KEY]"
+}
 ```
 
 ## Limitations
