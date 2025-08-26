@@ -36,7 +36,7 @@ class FilechatApp(App):
         self._chat = chat
         self._index = index
         self._chat_list = VerticalScroll()
-        self._user_input = Input(placeholder="Enter chat message ...")
+        self._user_input = Input(placeholder="Enter chat message ... (or type /exit to quit)")
 
     def compose(self) -> ComposeResult:
         yield self._chat_list
@@ -45,8 +45,11 @@ class FilechatApp(App):
         self._user_input.focus()
 
     def on_input_submitted(self, event: Input.Submitted):
-        self._user_input.value = ""
-        self.send_message(event.value)
+        if event.value.strip() == "/exit":
+            self.exit()
+        if event.value.strip() != "":
+            self.send_message(event.value)
+            self._user_input.value = ""
 
     @work(thread=True)
     def send_message(self, message: str):

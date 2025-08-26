@@ -24,7 +24,6 @@ arg_parser.add_argument(
 def main():
     args = arg_parser.parse_args()
     config = load_config(args.config)
-    print(config)
     print(f"Using device {config.device}")
     sentence_transformer = SentenceTransformer(
         config.embedding_model, trust_remote_code=True, device=config.device
