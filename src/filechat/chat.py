@@ -7,6 +7,7 @@ from mistralai import Mistral
 from filechat.config import Config
 from filechat.index import IndexedFile
 import sqlite3
+import json
 
 
 class Chat:
@@ -20,7 +21,9 @@ class Chat:
     """)
 
     def __init__(self, model: str, api_key: str | None, chat_id: int | None = None):
-        self._message_history = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
+        self._message_history: list[dict[str, str | list]] = [
+            {"role": "system", "content": self.SYSTEM_MESSAGE}
+        ]
         self._model = model
         assert api_key is not None, (
             "Please provide an API key, either in the config file or in the MISTRAL_API_KEY"
@@ -45,7 +48,10 @@ class Chat:
             response_str += str(chunk_content)
             yield str(chunk_content)
 
-        self._message_history.append({"role": "assistant", "content": response_str})
+        filenames = [f.path() for f in files]
+        self._message_history.append(
+            {"role": "assistant", "content": response_str, "files_used": filenames}
+        )
 
     @property
     def chat_id(self) -> int | None:
@@ -54,6 +60,10 @@ class Chat:
     @chat_id.setter
     def chat_id(self, chat_id: int):
         self._id = chat_id
+
+    @property
+    def messages(self):
+        return self._message_history
 
     def _get_context_message(self, files: list[IndexedFile]) -> dict:
         message = "<context>"
@@ -91,6 +101,16 @@ class ChatStore:
             assert self._cursor.lastrowid is not None
             chat.chat_id = self._cursor.lastrowid
 
+        self._cursor.execute("SELECT MAX(id) FROM messages WHERE chat_id = ?", (chat.chat_id,))
+        messages_to_store = chat.messages
+        max_id = self._cursor.fetchone()[0]
+        start_id = 0 if max_id is None else max_id + 1
+        if max_id is not None:
+            messages_to_store = messages_to_store[start_id :]
+
+        self._store_messages(chat.chat_id, messages_to_store, start_id)
+        self._conn.commit()
+
     def _create_database(self) -> tuple[sqlite3.Connection, sqlite3.Cursor]:
         conn = sqlite3.connect(self._file_path)
         cursor = conn.cursor()
@@ -109,7 +129,7 @@ class ChatStore:
         cursor.execute("""
         CREATE TABLE messages
         (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER,
             chat_id INTEGER,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -122,3 +142,21 @@ class ChatStore:
         conn.commit()
 
         return conn, cursor
+
+    def _store_messages(self, chat_id: int, messages: list[dict], start_id: int):
+        query_template = "INSERT INTO messages VALUES (?, ?, ?, ?, ?)"
+        for i, message in enumerate(messages):
+            files_used = message.get("files_used")
+            if isinstance(files_used, list):
+                files_used = json.dumps(files_used)
+            self._cursor.execute(
+                query_template,
+                (
+                    start_id + i,
+                    chat_id,
+                    message["role"],
+                    message["content"],
+                    files_used,
+                ),
+            )
+        self._conn.commit()
