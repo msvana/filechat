@@ -106,7 +106,7 @@ class ChatStore:
         max_id = self._cursor.fetchone()[0]
         start_id = 0 if max_id is None else max_id + 1
         if max_id is not None:
-            messages_to_store = messages_to_store[start_id :]
+            messages_to_store = messages_to_store[start_id:]
 
         self._store_messages(chat.chat_id, messages_to_store, start_id)
         self._conn.commit()
