@@ -3,6 +3,7 @@ import sqlite3
 
 from filechat.chat import Chat, ChatStore
 from filechat.config import Config
+from filechat.index import IndexedFile
 
 
 def test_chat_store_creation(test_directory: str, config: Config):
@@ -18,39 +19,55 @@ def test_chat_store_creation(test_directory: str, config: Config):
 
 def test_chat_store(test_directory: str, config: Config):
     chat_store = ChatStore(test_directory, config)
+
+    chats = chat_store.chat_list()
+    assert len(chats) == 0
+
+    chat1 = Chat(config.model, config.api_key)
+    for _ in chat1.user_message("This project seems to contain many test files", []):
+        pass
+
+    chat_store.store(chat1)
+
+    chat2 = Chat(config.model, config.api_key)
+    for _ in chat1.user_message("This project seems to contain many test files", []):
+        pass
+
+    chat_store.store(chat2)
+
+    chats = chat_store.chat_list()
+    assert len(chats) == 2
+
+    assert chats[0][0] == chat2.chat_id
+    assert chats[1][0] == chat1.chat_id
+
+
+def test_load_nonexistent(test_directory: str, config: Config):
+    chat_store = ChatStore(test_directory, config)
+    chat = chat_store.load(999)
+    assert chat is None
+
+
+def test_load_existing(test_directory: str, config: Config):
+    chat_store = ChatStore(test_directory, config)
+
+    test_file = IndexedFile(test_directory, "test.md")
+
     chat = Chat(config.model, config.api_key)
-
-    for _ in chat.user_message("This project seems to contain many test files", []):
+    for _ in chat.user_message("This project seems to contain many test files", [test_file]):
         pass
 
     chat_store.store(chat)
+
     assert chat.chat_id is not None
+    chat_loaded = chat_store.load(chat.chat_id)
 
-    chat_store._cursor.execute("SELECT * FROM chats WHERE id = ?", (chat.chat_id,))
-    chats = chat_store._cursor.fetchall()
-    assert len(chats) == 1
-    assert chats[0][-1] == "New chat"
-    assert chats[0][1] is not None
+    assert chat_loaded is not None
+    assert chat_loaded.chat_id == chat.chat_id
+    assert len(chat_loaded.messages) == 3
+    last_message = chat_loaded.messages[-1]
+    assert last_message["role"] == "assistant"
+    assert last_message["files_used"][0] == "test.md"
 
-    chat_store._cursor.execute("SELECT * FROM messages WHERE chat_id = ?", (chat.chat_id,))
-    messages = chat_store._cursor.fetchall()
-    assert len(messages) == 3
-    assert messages[1][2] == "user"
-    assert messages[1][3] == "This project seems to contain many test files"
-    assert messages[-1][-1] == "[]"
-    assert messages[-1][0] == 2
-
-    for _ in chat.user_message("I'd like to include a test.c file with a hello world example", []):
+    for _ in chat.user_message("Thank you", []):
         pass
-
-    chat_store.store(chat)
-    chat_store._cursor.execute("SELECT * FROM chats WHERE id = ?", (chat.chat_id,))
-    chats = chat_store._cursor.fetchall()
-    assert len(chats) == 1
-    
-    chat_store._cursor.execute("SELECT * FROM messages WHERE chat_id = ?", (chat.chat_id,))
-    messages = chat_store._cursor.fetchall()
-    assert len(messages) == 5
-    assert messages[-2][2] == "user"
-    assert messages[-2][3] == "I'd like to include a test.c file with a hello world example"
-    assert messages[-1][0] == 4

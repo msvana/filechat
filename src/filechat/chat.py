@@ -21,9 +21,7 @@ class Chat:
     """)
 
     def __init__(self, model: str, api_key: str | None, chat_id: int | None = None):
-        self._message_history: list[dict[str, str | list]] = [
-            {"role": "system", "content": self.SYSTEM_MESSAGE}
-        ]
+        self._message_history: list[dict] = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
         self._model = model
         assert api_key is not None, (
             "Please provide an API key, either in the config file or in the MISTRAL_API_KEY"
@@ -65,6 +63,10 @@ class Chat:
     def messages(self):
         return self._message_history
 
+    @messages.setter
+    def messages(self, messages: list[dict]):
+        self._message_history = messages
+
     def _get_context_message(self, files: list[IndexedFile]) -> dict:
         message = "<context>"
 
@@ -82,6 +84,7 @@ class ChatStore:
 
     def __init__(self, directory: str, config: Config):
         self._file_path = self._get_file_path(directory, config.index_store_path)
+        self._config = config
         if not os.path.exists(self._file_path):
             self._conn, self._cursor = self._create_database()
         else:
@@ -110,6 +113,35 @@ class ChatStore:
 
         self._store_messages(chat.chat_id, messages_to_store, start_id)
         self._conn.commit()
+
+    def chat_list(self) -> list[tuple]:
+        self._cursor.execute("SELECT * FROM chats ORDER BY created_at DESC")
+        chats = self._cursor.fetchall()
+        return chats
+
+    def load(self, chat_id: int) -> Chat | None:
+        self._cursor.execute("SELECT * FROM chats WHERE id == ?", (chat_id,))
+        chat = self._cursor.fetchone()
+
+        if not chat:
+            return None
+
+        chat = Chat(self._config.model, self._config.api_key, chat_id)
+        self._cursor.execute("SELECT * FROM messages WHERE chat_id == ?", (chat_id,))
+        messages_raw = self._cursor.fetchall()
+        messages = []
+
+        for message_raw in messages_raw:
+            message = {
+                "role": message_raw[2],
+                "content": message_raw[3],
+            }
+            if message_raw[4]:
+                message["files_used"] = json.loads(message_raw[4])
+            messages.append(message)
+
+        chat.messages = messages
+        return chat
 
     def _create_database(self) -> tuple[sqlite3.Connection, sqlite3.Cursor]:
         conn = sqlite3.connect(self._file_path)
