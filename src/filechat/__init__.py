@@ -9,7 +9,7 @@ from filechat.index import get_index
 from filechat.tui import FilechatApp
 from filechat.watcher import FileWatcher
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.ERROR)
 
 arg_parser = ArgumentParser(description="Chat with an LLM about your local project")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
