@@ -4,12 +4,20 @@ import os
 import torch
 from pydantic import BaseModel
 
-CONFIG_PATH_DEFAULT = os.path.join(os.environ["HOME"], ".config", "filechat.json")
+HOME_DIR = os.path.expanduser("~")
+CONFIG_PATH_DEFAULT = os.path.join(HOME_DIR, ".config", "filechat.json")
 
 
 class Config(BaseModel):
     max_file_size_kb: int = 25
-    ignored_dirs: list[str] = [".git", "__pycache__", ".venv", ".pytest_cache", "node_modules"]
+    ignored_dirs: list[str] = [
+        ".git",
+        "__pycache__",
+        ".venv",
+        ".pytest_cache",
+        "node_modules",
+        "dist",
+    ]
     allowed_suffixes: list[str] = [
         ".txt",
         ".json",
@@ -21,7 +29,7 @@ class Config(BaseModel):
         ".ts",
         ".vue",
     ]
-    index_store_path: str = os.path.join(os.environ["HOME"], ".cache", "filechat")
+    index_store_path: str = os.path.join(HOME_DIR, ".cache", "filechat")
     model: str = "mistral-medium-2508"
     api_key: str | None = os.environ.get("MISTRAL_API_KEY")
 
@@ -51,7 +59,8 @@ def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:
         config = Config()
         if path == CONFIG_PATH_DEFAULT:
             config_json = config.model_dump_json(indent=4)
-            os.makedirs("/".join(path.split("/")[:-1]), exist_ok=True)
+            config_dir = os.path.dirname(path)
+            os.makedirs(config_dir, exist_ok=True)
             with open(path, "w") as config_file:
                 config_file.write(config_json)
         else:
