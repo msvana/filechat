@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 from sentence_transformers import SentenceTransformer
 
-from filechat.chat import Chat
+from filechat.chat import Chat, ChatStore
 from filechat.config import load_config, CONFIG_PATH_DEFAULT
 from filechat.index import get_index
 from filechat.tui import FilechatApp
@@ -34,8 +34,9 @@ def main():
     watcher.start()
 
     chat = Chat(config.model, config.api_key)
+    chat_store = ChatStore(args.directory, config)
 
-    app = FilechatApp(chat, index)
+    app = FilechatApp(chat, index, chat_store)
     app.run()
 
     watcher.stop()
