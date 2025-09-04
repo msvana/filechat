@@ -1,3 +1,4 @@
+from io import SEEK_CUR
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Center, Vertical, VerticalScroll
@@ -6,6 +7,7 @@ from textual.widgets import Input, ListItem, ListView, Static
 
 from filechat.chat import Chat, ChatStore
 from filechat.index import FileIndex
+import pyperclip
 
 
 class HistoryScreen(ModalScreen):
@@ -97,7 +99,11 @@ class FilechatApp(App):
         self._index = index
         self._chat_store = chat_store
         self._chat_list = VerticalScroll()
-        self._user_input = Input(placeholder="Enter chat message ... (type /exit to quit or /history to revisit previous chats)")
+        self._user_input = Input(
+            placeholder=(
+                "Enter chat message ... (type /exit to quit or /history to revisit previous chats)"
+            )
+        )
 
     def compose(self) -> ComposeResult:
         yield self._chat_list
@@ -113,6 +119,12 @@ class FilechatApp(App):
         elif event.value.strip() != "":
             self.send_message(event.value)
         self._user_input.value = ""
+
+    def key_c(self):
+        selected_text = self.screen.get_selected_text()
+        self.screen.clear_selection()
+        if selected_text:
+            pyperclip.copy(selected_text)
 
     @work(thread=True)
     def send_message(self, message: str):
