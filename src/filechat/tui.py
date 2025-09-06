@@ -65,6 +65,10 @@ class FilechatApp(App):
         Static.user {
             border: solid blue;
         }
+        
+        Static.files {
+            border: solid orange;
+        }
 
         Input {
             border: solid blue;
@@ -100,7 +104,8 @@ class FilechatApp(App):
         self._chat_list = VerticalScroll()
         self._user_input = Input(
             placeholder=(
-                "Enter chat message ... (type /exit to quit, /new to start a new chat, or /history to revisit previous chats)"
+                "Enter chat message ... (type /exit to quit, /new to start a new chat, or /history"
+                " to revisit previous chats)"
             )
         )
 
@@ -149,6 +154,11 @@ class FilechatApp(App):
         self.call_from_thread(self._chat_store.store, self._chat)
         self.call_from_thread(self._user_input.set_loading, False)
 
+        files_used = "; ".join(f.path() for f in files)
+        files_widget = Static(files_used, classes="files")
+        self.call_from_thread(self._chat_list.mount, files_widget)
+        self.call_from_thread(self._chat_list.scroll_end)
+
     def _show_history_modal(self):
         def handle_history_result(chat: Chat | None):
             if not chat:
@@ -168,6 +178,10 @@ class FilechatApp(App):
                 message["content"], classes="user" if message["role"] == "user" else "llm"
             )
             self._chat_list.mount(message_widget)
+
+            if message["role"] == "assistant":
+                files_widget = Static("; ".join(message["files_used"]), classes="files")
+                self._chat_list.mount(files_widget)
 
         self._chat_list.scroll_end()
 

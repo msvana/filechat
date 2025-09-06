@@ -107,7 +107,8 @@ class FileIndex:
         query_embedding = self._model.encode(f"search_query: {query}")
         _, indices = self._vector_index.search(query_embedding.reshape(1, -1), k=top_k)
         matching_files = []
-        for idx in indices[0]:
+        for idx in set(indices[0]):
+            logging.info(idx)
             matching_files.append(self._files[idx])
         return matching_files
 

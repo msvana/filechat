@@ -49,6 +49,11 @@ class Config(BaseModel):
             return "cuda"
         return "cpu"
 
+    @property
+    def log_dir(self) -> str:
+        return os.path.join(self.index_store_path, "logs")
+
+
 
 def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:
     if os.path.exists(path):
