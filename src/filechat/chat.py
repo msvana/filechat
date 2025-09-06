@@ -11,6 +11,8 @@ import json
 
 
 class Chat:
+    TITLE_MAX_LENGTH = 30
+
     SYSTEM_MESSAGE = dedent("""\
     You are a local project assistant. Your task is to assist the user with various projects. 
     They can ask you question to understand the project or for suggestions on how to improve the projects.
@@ -67,6 +69,27 @@ class Chat:
     def messages(self, messages: list[dict]):
         self._message_history = messages
 
+    @property
+    def title(self):
+        if len(self._message_history) < 2:
+            return "New chat"
+
+        title_words = []
+        title_length_without_spaces = 0
+        first_user_message = self._message_history[1]["content"]
+        first_user_message_words = first_user_message.split(" ")
+
+        for word in first_user_message_words:
+            if title_length_without_spaces + len(title_words) - 1 + len(word) > self.TITLE_MAX_LENGTH:
+                break
+            title_words.append(word)
+            title_length_without_spaces += len(word)
+
+        title = " ".join(title_words)
+        if len(title) < len(first_user_message):
+            title += "..."
+        return title
+
     def _get_context_message(self, files: list[IndexedFile]) -> dict:
         message = "<context>"
 
@@ -98,9 +121,14 @@ class ChatStore:
         file_path = os.path.join(store_directory, file_name)
         return file_path
 
+    def new_chat(self) -> Chat:
+        return Chat(self._config.model, self._config.api_key)
+
     def store(self, chat: Chat):
+
         if chat.chat_id is None:
-            self._cursor.execute("INSERT INTO chats (title) VALUES ('New chat')")
+            title = chat.title
+            self._cursor.execute("INSERT INTO chats (title) VALUES (?)", (title,))
             assert self._cursor.lastrowid is not None
             chat.chat_id = self._cursor.lastrowid
 

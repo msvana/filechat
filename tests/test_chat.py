@@ -18,19 +18,20 @@ def test_chat_store_creation(test_directory: str, config: Config):
 
 
 def test_chat_store(test_directory: str, config: Config):
+    test_message = "This project seems to contain many test files"
     chat_store = ChatStore(test_directory, config)
 
     chats = chat_store.chat_list()
     assert len(chats) == 0
 
     chat1 = Chat(config.model, config.api_key)
-    for _ in chat1.user_message("This project seems to contain many test files", []):
+    for _ in chat1.user_message(test_message, []):
         pass
 
     chat_store.store(chat1)
 
     chat2 = Chat(config.model, config.api_key)
-    for _ in chat1.user_message("This project seems to contain many test files", []):
+    for _ in chat1.user_message(test_message, []):
         pass
 
     chat_store.store(chat2)
@@ -40,6 +41,7 @@ def test_chat_store(test_directory: str, config: Config):
 
     assert chats[0][0] == chat2.chat_id
     assert chats[1][0] == chat1.chat_id
+    assert chats[1][2] == "This project seems to contain..."
 
 
 def test_load_nonexistent(test_directory: str, config: Config):

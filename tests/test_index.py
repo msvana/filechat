@@ -78,6 +78,48 @@ def test_delete_file(test_directory, config: Config, embedding_model: SentenceTr
     assert len(index._files) == index._vector_index.ntotal
 
 
+def test_delete_file_ignored_directory(
+    test_directory, config: Config, embedding_model: SentenceTransformer
+):
+    ignored_dir = "temp_ignored"
+    os.makedirs(os.path.join(test_directory, ignored_dir))
+    ignored_file = os.path.join(ignored_dir, "ignored_file.txt")
+    with open(os.path.join(test_directory, ignored_file), "w") as f:
+        f.write("This file should be ignored")
+
+    index, _ = get_index(test_directory, config, embedding_model)
+    initial_count = len(index._files)
+
+    indexed_files = [file.path() for file in index._files]
+    assert ignored_file in indexed_files
+
+    config.ignored_dirs.append(ignored_dir)
+
+    index.clean_old_files(config)
+
+    indexed_files = [file.path() for file in index._files]
+    assert ignored_file not in indexed_files
+    assert len(index._files) == initial_count - 1
+    assert index._vector_index.ntotal == initial_count - 1
+
+
+def test_delete_file_suffix(test_directory, config: Config, embedding_model: SentenceTransformer):
+    disallowed_file = "test.md"
+    index, _ = get_index(test_directory, config, embedding_model)
+    initial_count = len(index._files)
+
+    indexed_files = [file.path() for file in index._files]
+    assert disallowed_file in indexed_files
+
+    config.allowed_suffixes = [s for s in config.allowed_suffixes if s != ".md"]
+    index.clean_old_files(config)
+
+    indexed_files = [file.path() for file in index._files]
+    assert disallowed_file not in indexed_files
+    assert len(index._files) == initial_count - 1
+    assert index._vector_index.ntotal == initial_count - 1
+
+
 def test_rebuild(test_directory, config: Config, embedding_model: SentenceTransformer):
     get_index(test_directory, config, embedding_model)
     _, num_indexed = get_index(test_directory, config, embedding_model)

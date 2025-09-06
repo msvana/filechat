@@ -84,14 +84,22 @@ class FileIndex:
 
         return len(indexed_files)
 
-    def clean_old_files(self):
-        for file in self._files:
+    def clean_old_files(self, config: Config):
+        files_to_delete = []
+        for i, file in enumerate(self._files):
             full_path = os.path.join(self._directory, file.path())
-            if not os.path.exists(full_path):
-                idx, _ = self._file_needs_update(file)
-                if idx is not None:
-                    logging.info(f"Removing deleted file {file.path()}")
-                    self._delete_file(idx)
+            directory_parts = file.path().split(os.sep)[:-1]
+
+            file_exists = os.path.exists(full_path)
+            file_ignored = any(ign in directory_parts for ign in config.ignored_dirs)
+            file_suffix_allowed = any(full_path.endswith(s) for s in config.allowed_suffixes)
+
+            if not file_exists or file_ignored or not file_suffix_allowed:
+                logging.info(f"Removing deleted file {file.path()}")
+                files_to_delete.append(i)
+
+        for i in files_to_delete[::-1]:
+            self._delete_file(i)
 
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:
         logging.info(f"Querying: `{query}`")
@@ -185,7 +193,7 @@ def get_index(
     else:
         try:
             index = index_store.load(directory, embedding_model)
-            index.clean_old_files()
+            index.clean_old_files(config)
         except FileNotFoundError:
             logging.info("Index file not found. Creating new index from scratch")
             index = FileIndex(embedding_model, directory, 768)

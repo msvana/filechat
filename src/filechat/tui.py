@@ -1,4 +1,3 @@
-from io import SEEK_CUR
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Center, Vertical, VerticalScroll
@@ -101,7 +100,7 @@ class FilechatApp(App):
         self._chat_list = VerticalScroll()
         self._user_input = Input(
             placeholder=(
-                "Enter chat message ... (type /exit to quit or /history to revisit previous chats)"
+                "Enter chat message ... (type /exit to quit, /new to start a new chat, or /history to revisit previous chats)"
             )
         )
 
@@ -112,11 +111,14 @@ class FilechatApp(App):
         self._user_input.focus()
 
     def on_input_submitted(self, event: Input.Submitted):
-        if event.value.strip() == "/exit":
+        user_message = event.value.strip()
+        if user_message == "/exit":
             self.exit()
-        elif event.value.strip() == "/history":
+        elif user_message == "/history":
             self._show_history_modal()
-        elif event.value.strip() != "":
+        elif user_message == "/new":
+            self._start_new_chat()
+        elif user_message != "":
             self.send_message(event.value)
         self._user_input.value = ""
 
@@ -168,3 +170,7 @@ class FilechatApp(App):
             self._chat_list.mount(message_widget)
 
         self._chat_list.scroll_end()
+
+    def _start_new_chat(self):
+        self._chat = self._chat_store.new_chat()
+        self._chat_list.remove_children()
