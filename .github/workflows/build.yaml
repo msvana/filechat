@@ -21,4 +21,4 @@ jobs:
               with:
                   files: dist/*.whl
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: test-tag
+                  tag_name: test-tag
