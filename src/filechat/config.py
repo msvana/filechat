@@ -19,20 +19,40 @@ class Config(BaseModel):
         "dist",
     ]
     allowed_suffixes: list[str] = [
-        ".txt",
-        ".json",
-        ".py",
-        ".toml",
-        ".html",
+        # Text files
         ".md",
+        ".txt",
+        # Config files
+        ".json",
+        ".toml",
+        # HTML/CSS
+        ".html",
+        ".css",
+        ".sass",
+        ".scss",
+        # Python
+        ".py",
+        # Basic Javascript files
         ".js",
         ".ts",
         ".vue",
-        ".yaml",
+        ".tsx",
+        ".jsx",
+        # Golang
         ".go",
         ".mod",
         ".work",
         ".gotmpl",
+        # C
+        ".c",
+        ".h",
+        ".i",
+        ".mk",
+        ".cmake",
+        ".config",
+        ".pc",
+        ".dox",
+        ".ld",
     ]
     index_store_path: str = os.path.join(HOME_DIR, ".cache", "filechat")
     model: str = "mistral-medium-2508"
