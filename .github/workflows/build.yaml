@@ -1,9 +1,10 @@
 name: Build Wheel
 
 on:
-    push:
-        tags:
-            - "v*.*.*"
+    push
+
+permissions:
+    contents: write
 
 jobs:
     build-and-publish:
@@ -19,3 +20,5 @@ jobs:
               uses: softprops/action-gh-release@v2
               with:
                   files: dist/*.whl
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  tag: test-tag
