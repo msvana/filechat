@@ -29,6 +29,10 @@ class Config(BaseModel):
         ".ts",
         ".vue",
         ".yaml",
+        ".go",
+        ".mod",
+        ".work",
+        ".gotmpl",
     ]
     index_store_path: str = os.path.join(HOME_DIR, ".cache", "filechat")
     model: str = "mistral-medium-2508"
@@ -53,7 +57,6 @@ class Config(BaseModel):
     @property
     def log_dir(self) -> str:
         return os.path.join(self.index_store_path, "logs")
-
 
 
 def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:
