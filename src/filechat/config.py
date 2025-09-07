@@ -28,6 +28,7 @@ class Config(BaseModel):
         ".js",
         ".ts",
         ".vue",
+        ".yaml",
     ]
     index_store_path: str = os.path.join(HOME_DIR, ".cache", "filechat")
     model: str = "mistral-medium-2508"
