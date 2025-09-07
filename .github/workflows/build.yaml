@@ -1,7 +1,9 @@
 name: Build Wheel
 
 on:
-    push
+    push:
+        tags:
+            - "v*.*.*"
 
 permissions:
     contents: write
@@ -21,4 +23,3 @@ jobs:
               with:
                   files: dist/*.whl
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  tag_name: test-tag
