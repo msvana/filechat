@@ -84,7 +84,7 @@ uv run filechat /path/to/your/project
 
 ## Configuration
 
-On the first run, FileChat creates a configuration file at `~/.config/filechat.json`. You can modify it as you need.
+On the first run, FileChat creates a configuration file at `~/.config/filechat.json`. Feel free to change it as you need.
 Here is a full example:
 
 ```json
@@ -97,7 +97,19 @@ Here is a full example:
     "api_key": "[MISTRAL_API_KEY]"
 }
 ```
+## Roadmap
 
-## Limitations
+### Short term (weeks)
 
-FileChat was tested only on Fedora 42. It might not work on other distros or operating systems.
+- Add support for other models
+- Add tools for browsing the filesystem
+- Improve inference for embedding models (switch from sentence-transformers to an ONNX runtime)
+- Support CUDA on Windows
+- Publish on PyPI
+
+### Long term (months)
+
+- Improve file retrieval (for example, via Graph RAG)
+- Reimplement file indexing and querying in a compiled language
+- Support important binary file types (images, PDFs)
+- Add web search tools
