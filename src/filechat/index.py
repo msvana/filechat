@@ -89,7 +89,7 @@ class FileIndex:
         for i, file in enumerate(self._files):
             full_path = os.path.join(self._directory, file.path())
             
-            if _is_ignored(self._directory, full_path, config):
+            if is_ignored(self._directory, full_path, config):
                 logging.info(f"Removing deleted file {file.path()}")
                 files_to_delete.append(i)
 
@@ -197,7 +197,7 @@ def get_index(
     for root, _, files in os.walk(directory):
         for file in files:
             full_path = os.path.join(root, file)
-            if not _is_ignored(directory, full_path, config):
+            if not is_ignored(directory, full_path, config):
                 batch.append(os.path.relpath(full_path, directory))
 
             if len(batch) >= config.index_batch_size:
@@ -211,7 +211,7 @@ def get_index(
     return index, num_indexed
 
 
-def _is_ignored(directory: str, full_path: str, config: Config) -> bool:
+def is_ignored(directory: str, full_path: str, config: Config) -> bool:
     relative_path = os.path.relpath(full_path, directory)
     directory_parts = relative_path.split(os.sep)[:-1]
     file_size = os.path.getsize(full_path)
@@ -221,5 +221,5 @@ def _is_ignored(directory: str, full_path: str, config: Config) -> bool:
     file_suffix_allowed = any(full_path.endswith(s) for s in config.allowed_suffixes)
     file_above_max_size = file_size > config.max_file_size_kb * 1024
 
-    is_ignored = not file_exists or file_ignored or not file_suffix_allowed or file_above_max_size
-    return is_ignored
+    should_ignore = not file_exists or file_ignored or not file_suffix_allowed or file_above_max_size
+    return should_ignore
