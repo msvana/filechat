@@ -21,7 +21,37 @@ https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
 - Python 3.12 or higher
 - A [Mistral AI](https://mistral.ai/) API key stored in the `MISTRAL_API_KEY` environment variable
 
-### Installation steps
+### Option 1: Install the pre-built wheel
+
+You can use any Package management tool you like. Here is an example for `pip`:
+
+```bash
+pip install https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl
+```
+
+And here is an example of installing FileChat as a UV tool:
+
+```bash
+uv tool install https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl
+```
+
+**On Linux, you should also specify the hardware accelerator as an optional dependency**. We support `cpu`, `xpu` (Intel Arc), and `cuda`.
+If you don't specify the accelerator, you'll get a version with CUDA support, which might be unnecessarily large. Here is an example of 
+installing FileChat with `xpu` support:
+
+PIP:
+
+```bash
+pip install "filechat[xpu] @ https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl"
+```
+
+UV Tool:
+
+```bash
+uv tool install https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl[xpu]
+```
+
+### Option 2: Clone the repository and use UV
 
 1. Clone the repository:
 
