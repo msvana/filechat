@@ -80,7 +80,10 @@ class Chat:
         first_user_message_words = first_user_message.split(" ")
 
         for word in first_user_message_words:
-            if title_length_without_spaces + len(title_words) - 1 + len(word) > self.TITLE_MAX_LENGTH:
+            if (
+                title_length_without_spaces + len(title_words) - 1 + len(word)
+                > self.TITLE_MAX_LENGTH
+            ):
                 break
             title_words.append(word)
             title_length_without_spaces += len(word)
@@ -125,7 +128,6 @@ class ChatStore:
         return Chat(self._config.model, self._config.api_key)
 
     def store(self, chat: Chat):
-
         if chat.chat_id is None:
             title = chat.title
             self._cursor.execute("INSERT INTO chats (title) VALUES (?)", (title,))
@@ -155,7 +157,7 @@ class ChatStore:
             return None
 
         chat = Chat(self._config.model, self._config.api_key, chat_id)
-        self._cursor.execute("SELECT * FROM messages WHERE chat_id == ?", (chat_id,))
+        self._cursor.execute("SELECT * FROM messages WHERE chat_id = ?", (chat_id,))
         messages_raw = self._cursor.fetchall()
         messages = []
 
@@ -170,6 +172,13 @@ class ChatStore:
 
         chat.messages = messages
         return chat
+
+    def delete(self, chat_id: int) -> int:
+        self._cursor.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
+        self._cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+        self._conn.commit()
+        return self._cursor.rowcount
+
 
     def _create_database(self) -> tuple[sqlite3.Connection, sqlite3.Cursor]:
         conn = sqlite3.connect(self._file_path)

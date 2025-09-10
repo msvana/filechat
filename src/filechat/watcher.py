@@ -5,21 +5,23 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from filechat.config import Config
-from filechat.index import FileIndex
+from filechat.index import FileIndex, is_ignored
 
 
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, index: FileIndex, config: Config):
+        super().__init__()
         self._index = index
-        self._allowed_suffixes = config.allowed_suffixes
-        self._ignored_directories = config.ignored_dirs
+        self._config = config
 
     def on_modified(self, event: FileSystemEvent):
+        logging.info(event)
         if event.is_directory:
             return
         self._handle_file_change(event.src_path)
 
     def on_created(self, event: FileSystemEvent):
+        logging.info(event)
         if event.is_directory:
             return
         self._handle_file_change(event.src_path)
@@ -29,30 +31,33 @@ class FileChangeHandler(FileSystemEventHandler):
             return
         self._handle_file_deletion(event.src_path)
 
+    def on_moved(self, event: FileSystemEvent):
+        self._handle_file_deletion(event.src_path)
+        self._handle_file_change(event.dest_path)
+
     def _handle_file_change(self, file_path: bytes | str):
-        file_path = str(file_path)
-        relative_path = os.path.relpath(file_path, self._index.directory())
-        if any(ignored in relative_path for ignored in self._ignored_directories):
-            return
+        try:
+            file_path = str(file_path)
+            relative_path = os.path.relpath(file_path, self._index.directory())
+            logging.info(f"File changed: {relative_path}")
 
-        if all(not relative_path.endswith(suffix) for suffix in self._allowed_suffixes):
-            return
-
-        logging.info(f"File changed: {relative_path}")
-        self._index.add_file(relative_path)
+            if not is_ignored(self._index.directory(), file_path, self._config):
+                self._index.add_file(relative_path)
+        except Exception as e:
+            logging.warning(type(e))
+            logging.warning(e)
 
     def _handle_file_deletion(self, file_path: bytes | str):
-        file_path = str(file_path)
-        relative_path = os.path.relpath(file_path, self._index.directory())
+        try:
+            file_path = str(file_path)
+            relative_path = os.path.relpath(file_path, self._index.directory())
+            logging.info(f"File deleted: {relative_path}")
 
-        if any(ignored in relative_path for ignored in self._ignored_directories):
-            return
-
-        if all(not relative_path.endswith(suffix) for suffix in self._allowed_suffixes):
-            return
-
-        logging.info(f"File deleted: {relative_path}")
-        self._index.clean_old_files()
+            if is_ignored(self._index.directory(), file_path, self._config):
+                self._index.clean_old_files()
+        except Exception as e:
+            logging.warning(type(e))
+            logging.warning(e)
 
 
 class FileWatcher:

@@ -20,7 +20,7 @@ class HistoryScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical():
             center = Center(self._history_view)
-            center.border_title = "Chat History"
+            center.border_title = "Chat History (press 'd' to delete a chat)"
             yield center
 
     def on_mount(self):
@@ -41,6 +41,12 @@ class HistoryScreen(ModalScreen):
             assert selected_index is not None
             self._close_with_selected_chat(selected_index)
 
+    def key_d(self):
+        if self._history_view.highlighted_child:
+            selected_index = self._history_view.index
+            assert selected_index is not None
+            self._delete_selected_chat(selected_index)
+
     def on_list_view_selected(self, event: ListView.Selected):
         selected_index = event.index
         self._close_with_selected_chat(selected_index)
@@ -49,6 +55,11 @@ class HistoryScreen(ModalScreen):
         chat_id = self._chats[selected_index][0]
         chat = self._chat_store.load(chat_id)
         self.dismiss(chat)
+
+    def _delete_selected_chat(self, selected_index: int):
+        chat_id = self._chats.pop(selected_index)[0]
+        self._chat_store.delete(chat_id) 
+        self._history_view.remove_items([selected_index])
 
 
 class FilechatApp(App):

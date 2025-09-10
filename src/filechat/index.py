@@ -88,13 +88,8 @@ class FileIndex:
         files_to_delete = []
         for i, file in enumerate(self._files):
             full_path = os.path.join(self._directory, file.path())
-            directory_parts = file.path().split(os.sep)[:-1]
-
-            file_exists = os.path.exists(full_path)
-            file_ignored = any(ign in directory_parts for ign in config.ignored_dirs)
-            file_suffix_allowed = any(full_path.endswith(s) for s in config.allowed_suffixes)
-
-            if not file_exists or file_ignored or not file_suffix_allowed:
+            
+            if is_ignored(self._directory, full_path, config):
                 logging.info(f"Removing deleted file {file.path()}")
                 files_to_delete.append(i)
 
@@ -181,8 +176,6 @@ class IndexStore:
 def get_index(
     directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
 ) -> tuple[FileIndex, int]:
-    allowed_suffixes = config.allowed_suffixes
-    ignored_directories = config.ignored_dirs
     index_store = IndexStore(config.index_store_path)
 
     if not os.path.isdir(directory):
@@ -202,21 +195,10 @@ def get_index(
     num_indexed = 0
     batch = []
     for root, _, files in os.walk(directory):
-        if any(ignored in root for ignored in ignored_directories):
-            continue
-
         for file in files:
             full_path = os.path.join(root, file)
-            relative_path = os.path.relpath(full_path, directory)
-
-            if all(not file.endswith(suffix) for suffix in allowed_suffixes):
-                continue
-
-            file_size = os.path.getsize(full_path)
-            if file_size > config.max_file_size_kb * 1024:
-                continue
-
-            batch.append(relative_path)
+            if not is_ignored(directory, full_path, config):
+                batch.append(os.path.relpath(full_path, directory))
 
             if len(batch) >= config.index_batch_size:
                 num_indexed += index.add_files(batch)
@@ -227,3 +209,17 @@ def get_index(
 
     index_store.store(index)
     return index, num_indexed
+
+
+def is_ignored(directory: str, full_path: str, config: Config) -> bool:
+    relative_path = os.path.relpath(full_path, directory)
+    directory_parts = relative_path.split(os.sep)[:-1]
+    file_size = os.path.getsize(full_path)
+
+    file_exists = os.path.exists(full_path)
+    file_ignored = any(ign in directory_parts for ign in config.ignored_dirs)
+    file_suffix_allowed = any(full_path.endswith(s) for s in config.allowed_suffixes)
+    file_above_max_size = file_size > config.max_file_size_kb * 1024
+
+    should_ignore = not file_exists or file_ignored or not file_suffix_allowed or file_above_max_size
+    return should_ignore
