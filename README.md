@@ -26,13 +26,13 @@ https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
 You can use any Package management tool you like. Here is an example for `pip`:
 
 ```bash
-pip install https://github.com/msvana/filechat/releases/download/latest/filechat-latest-py3-none-any.whl
+pip install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.5-py3-none-any.whl
 ```
 
 And here is an example of installing FileChat as a UV tool:
 
 ```bash
-uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-latest-py3-none-any.whl
+uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.5-py3-none-any.whl
 ```
 
 **On Linux, you should also specify the hardware accelerator as an optional dependency**. We support `cpu`, `xpu` (Intel Arc), and `cuda`.
@@ -42,13 +42,13 @@ installing FileChat with `xpu` support:
 PIP:
 
 ```bash
-pip install "filechat[xpu] @ https://github.com/msvana/filechat/releases/download/latest/filechat-latest-py3-none-any.whl"
+pip install "filechat[xpu] @ https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.5-py3-none-any.whl"
 ```
 
 UV Tool:
 
 ```bash
-uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-latest-py3-none-any.whl[xpu]
+uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.5-py3-none-any.whl[xpu]
 ```
 
 ### Option 2: Clone the repository and use UV
