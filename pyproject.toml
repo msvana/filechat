@@ -1,6 +1,6 @@
 [project]
 name = "filechat"
-version = "0.1.4"
+version = "0.1.5"
 description = "A local read-only AI coding assistant"
 readme = "README.md"
 license = "MIT"
