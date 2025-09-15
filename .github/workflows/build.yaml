@@ -23,3 +23,17 @@ jobs:
               with:
                   files: dist/*.whl
                   token: ${{ secrets.GITHUB_TOKEN }}
+            - name: Get version from tag
+              id: get_version
+              run: |
+                VERSION=${GITHUB_REF#refs/tags/v}
+                echo "version=$VERSION" >> $GITHUB_OUTPUT
+            - name: Rename wheel for latest
+              run: mv dist/filechat-${{ steps.get_version.outputs.version }}-py3-none-any.whl dist/filechat-latest-py3-none-any.whl
+            - name: Publish latest release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: latest
+                  files: dist/*.whl
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  prerelease: true
