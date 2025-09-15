@@ -7,7 +7,7 @@ from textwrap import dedent
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-
+from threading import Lock
 from filechat.config import Config
 
 
@@ -49,6 +49,7 @@ class IndexedFile:
 
 class FileIndex:
     def __init__(self, embedding_model: SentenceTransformer, directory: str, dimensions: int):
+        self._file_lock = Lock()
         self._directory = os.path.abspath(directory)
         self._dimensions = dimensions
         self._vector_index = faiss.IndexFlatL2(self._dimensions)
@@ -65,38 +66,42 @@ class FileIndex:
         return self.add_files([relative_path]) > 0
 
     def add_files(self, relative_paths: list[str]) -> int:
-        logging.info(f"Indexing batch of {len(relative_paths)} files")
-        indexed_files = [self._prepare_for_indexing(r) for r in relative_paths]
-        indexed_files = [f for f in indexed_files if f is not None]
-        if not indexed_files:
-            return 0
+        with self._file_lock:
+            logging.info(f"Indexing batch of {len(relative_paths)} files")
+            indexed_files = [self._prepare_for_indexing(r) for r in relative_paths]
+            indexed_files = [f for f in indexed_files if f is not None]
+            if not indexed_files:
+                return 0
 
-        texts = [f"search document: {f.content_for_embedding()}" for f in indexed_files]
-        assert self._model is not None
-        logging.info("Creating embeddings")
-        embeddings = self._model.encode(texts)
-        logging.info("Adding to vector index")
-        self._vector_index.add(embeddings)
+            texts = [f"search document: {f.content_for_embedding()}" for f in indexed_files]
+            assert self._model is not None
+            logging.info("Creating embeddings")
+            embeddings = self._model.encode(texts)
+            logging.info("Adding to vector index")
+            self._vector_index.add(embeddings)
 
-        for f in indexed_files:
-            self._files.append(f)
-            logging.info(f"Indexed file {f.path()}")
+            for f in indexed_files:
+                self._files.append(f)
+                logging.info(f"Indexed file {f.path()}")
 
         return len(indexed_files)
 
     def clean_old_files(self, config: Config):
-        files_to_delete = []
-        for i, file in enumerate(self._files):
-            full_path = os.path.join(self._directory, file.path())
-            
-            if is_ignored(self._directory, full_path, config):
-                logging.info(f"Removing deleted file {file.path()}")
-                files_to_delete.append(i)
+        with self._file_lock:
+            files_to_delete = []
+            for i, file in enumerate(self._files):
+                full_path = os.path.join(self._directory, file.path())
 
-        for i in files_to_delete[::-1]:
-            self._delete_file(i)
+                if is_ignored(self._directory, full_path, config):
+                    logging.info(f"Removing deleted file {file.path()}")
+                    files_to_delete.append(i)
+
+            for i in files_to_delete[::-1]:
+                self._delete_file(i)
 
     def query(self, query: str, top_k: int = 10) -> list[IndexedFile]:
+        filenames = [f.path() for f in self._files]
+        assert len(filenames) == len(set(filenames))
         logging.info(f"Querying: `{query}`")
         assert self._model is not None
         query_embedding = self._model.encode(f"search_query: {query}")
@@ -144,6 +149,7 @@ class IndexStore:
         logging.info(f"Storing index for {file_index.directory()}")
         model = file_index.model()
         file_index.set_model(None)
+        file_index._file_lock = None
         file_path = self._get_file_path(file_index.directory())
         with open(file_path, "wb") as f:
             pickle.dump(file_index, f)
@@ -157,6 +163,7 @@ class IndexStore:
         with open(file_path, "rb") as f:
             file_index = pickle.load(f)
         file_index.set_model(embedding_model)
+        file_index._file_lock = Lock()
         logging.info("Index loaded")
         return file_index
 
@@ -221,5 +228,7 @@ def is_ignored(directory: str, full_path: str, config: Config) -> bool:
     file_suffix_allowed = any(full_path.endswith(s) for s in config.allowed_suffixes)
     file_above_max_size = file_size > config.max_file_size_kb * 1024
 
-    should_ignore = not file_exists or file_ignored or not file_suffix_allowed or file_above_max_size
+    should_ignore = (
+        not file_exists or file_ignored or not file_suffix_allowed or file_above_max_size
+    )
     return should_ignore
