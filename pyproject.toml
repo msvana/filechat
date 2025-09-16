@@ -28,7 +28,14 @@ build-backend = "hatchling.build"
 
 [project.optional-dependencies]
 xpu = ["onnxruntime-openvino"]
-cuda = []
+cuda = [
+  "onnxruntime-gpu",
+  "nvidia-cublas-cu12",
+  "nvidia-curand-cu12",
+  "nvidia-cufft-cu12",
+  "nvidia-cuda-nvrtc-cu12",
+  "nvidia-cudnn-cu12",
+]
 
 [tool.uv]
 conflicts = [[{ extra = "xpu" }, { extra = "cuda" }]]

@@ -28,10 +28,13 @@ class Embedder:
         self._tokenizer: Tokenizer = Tokenizer.from_pretrained(model_name)
 
         self._ensure_downloaded()
+
+        ort.preload_dlls(cuda=True, cudnn=True)
+
         self._session = ort.InferenceSession(
             self._model_path,
-            providers=["OpenVINOExecutionProvider", "CPUExecutionProvider"],
-            provider_options=[{"device_type": "AUTO:GPU,CPU"}, {}],
+            providers=["CUDAExecutionProvider","OpenVINOExecutionProvider", "CPUExecutionProvider"],
+            provider_options=[{}, {"device_type": "AUTO:GPU,CPU"}, {}],
         )
 
     def _ensure_downloaded(self):
