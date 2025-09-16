@@ -3,12 +3,13 @@ import os
 import pickle
 from hashlib import sha256
 from textwrap import dedent
+from threading import Lock
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from threading import Lock
+
 from filechat.config import Config
+from filechat.embedder import Embedder
 
 
 class IndexedFile:
@@ -48,19 +49,19 @@ class IndexedFile:
 
 
 class FileIndex:
-    def __init__(self, embedding_model: SentenceTransformer, directory: str, dimensions: int):
+    def __init__(self, embedder: Embedder, directory: str, dimensions: int):
         self._file_lock = Lock()
         self._directory = os.path.abspath(directory)
         self._dimensions = dimensions
         self._vector_index = faiss.IndexFlatL2(self._dimensions)
         self._files: list[IndexedFile] = []
-        self.set_model(embedding_model)
+        self.set_embedder(embedder)
 
-    def set_model(self, embedding_model: SentenceTransformer | None):
-        self._model = embedding_model
+    def set_embedder(self, embedder: Embedder | None):
+        self._embedder = embedder
 
-    def model(self) -> SentenceTransformer | None:
-        return self._model
+    def embedder(self) -> Embedder | None:
+        return self._embedder
 
     def add_file(self, relative_path: str) -> bool:
         return self.add_files([relative_path]) > 0
@@ -74,9 +75,9 @@ class FileIndex:
                 return 0
 
             texts = [f"search document: {f.content_for_embedding()}" for f in indexed_files]
-            assert self._model is not None
+            assert self._embedder is not None
             logging.info("Creating embeddings")
-            embeddings = self._model.encode(texts)
+            embeddings = self._embedder.embed(texts)
             logging.info("Adding to vector index")
             self._vector_index.add(embeddings)
 
@@ -103,8 +104,8 @@ class FileIndex:
         filenames = [f.path() for f in self._files]
         assert len(filenames) == len(set(filenames))
         logging.info(f"Querying: `{query}`")
-        assert self._model is not None
-        query_embedding = self._model.encode(f"search_query: {query}")
+        assert self._embedder is not None
+        query_embedding = self._embedder.embed([f"search_query: {query}"])
         _, indices = self._vector_index.search(query_embedding.reshape(1, -1), k=top_k)
         matching_files = []
         for idx in set(indices[0]):
@@ -147,22 +148,23 @@ class IndexStore:
 
     def store(self, file_index: FileIndex):
         logging.info(f"Storing index for {file_index.directory()}")
-        model = file_index.model()
-        file_index.set_model(None)
+        model = file_index.embedder()
+        file_index.set_embedder(None)
         file_index._file_lock = None
         file_path = self._get_file_path(file_index.directory())
         with open(file_path, "wb") as f:
             pickle.dump(file_index, f)
-        file_index.set_model(model)
+        file_index.set_embedder(model)
+        file_index._file_lock = Lock()
         logging.info("Index stored")
 
-    def load(self, directory: str, embedding_model: SentenceTransformer) -> FileIndex:
+    def load(self, directory: str, embedder: Embedder) -> FileIndex:
         directory_abs_path = os.path.abspath(directory)
         logging.info(f"Trying to load cached index for {directory_abs_path}")
         file_path = self._get_file_path(directory_abs_path)
         with open(file_path, "rb") as f:
             file_index = pickle.load(f)
-        file_index.set_model(embedding_model)
+        file_index.set_embedder(embedder)
         file_index._file_lock = Lock()
         logging.info("Index loaded")
         return file_index
@@ -181,7 +183,7 @@ class IndexStore:
 
 
 def get_index(
-    directory: str, config: Config, embedding_model: SentenceTransformer, rebuild: bool = False
+    directory: str, config: Config, embedder: Embedder, rebuild: bool = False
 ) -> tuple[FileIndex, int]:
     index_store = IndexStore(config.index_store_path)
 
@@ -190,14 +192,14 @@ def get_index(
 
     if rebuild:
         logging.info("Rebuilding index from scratch")
-        index = FileIndex(embedding_model, directory, 768)
+        index = FileIndex(embedder, directory, 768)
     else:
         try:
-            index = index_store.load(directory, embedding_model)
+            index = index_store.load(directory, embedder)
             index.clean_old_files(config)
         except FileNotFoundError:
             logging.info("Index file not found. Creating new index from scratch")
-            index = FileIndex(embedding_model, directory, 768)
+            index = FileIndex(embedder, directory, 768)
 
     num_indexed = 0
     batch = []

@@ -10,10 +10,12 @@ dependencies = [
   "einops>=0.8.1",
   "faiss-cpu>=1.11.0.post1",
   "mistralai>=1.9.3",
+  "onnxruntime>=1.22.1",
   "pydantic>=2.11.7",
   "pyperclip>=1.9.0",
-  "sentence-transformers>=5.0.0",
   "textual>=5.3.0",
+  "tokenizers>=0.21.4",
+  "tqdm>=4.67.1",
   "watchdog>=6.0.0",
 ]
 
@@ -25,40 +27,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.optional-dependencies]
-cpu = [
-  "torch @ https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl ; python_version == '3.12'",
-  "torch @ https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp313-cp313-manylinux_2_28_x86_64.whl ; python_version == '3.13'",
-]
-xpu = [
-  "pytorch-triton-xpu @ https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12'",
-  "pytorch-triton-xpu @ https://download.pytorch.org/whl/pytorch_triton_xpu-3.3.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13'",
-  "torch @ https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp312-cp312-linux_x86_64.whl ; python_version == '3.12'",
-  "torch @ https://download.pytorch.org/whl/xpu/torch-2.7.1%2Bxpu-cp313-cp313-linux_x86_64.whl ; python_version == '3.13'",
-]
-cuda = [
-  "torch @ https://download.pytorch.org/whl/cu126/torch-2.7.1%2Bcu126-cp312-cp312-manylinux_2_28_x86_64.whl ; python_version == '3.12'",
-  "torch @ https://download.pytorch.org/whl/cu126/torch-2.7.1%2Bcu126-cp313-cp313-manylinux_2_28_x86_64.whl ; python_version == '3.13'",
-]
+xpu = ["onnxruntime-openvino"]
+cuda = []
 
 [tool.uv]
-conflicts = [[{ extra = "cpu" }, { extra = "xpu" }, { extra = "cuda" }]]
+conflicts = [[{ extra = "xpu" }, { extra = "cuda" }]]
 
-[tool.uv.sources]
-
-[[tool.uv.index]]
-name = "pytorch-xpu"
-url = "https://download.pytorch.org/whl/xpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cuda"
-url = "https://download.pytorch.org/whl/cu126"
-explicit = true
 
 [tool.black]
 line-length = 100

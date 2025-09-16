@@ -1,7 +1,7 @@
 import json
 import os
+from pathlib import Path
 
-import torch
 from pydantic import BaseModel
 
 HOME_DIR = os.path.expanduser("~")
@@ -64,19 +64,19 @@ class Config(BaseModel):
 
     @property
     def index_batch_size(self) -> int:
-        return 10
-
-    @property
-    def device(self):
-        if torch.xpu.is_available():
-            return "xpu"
-        if torch.cuda.is_available():
-            return "cuda"
-        return "cpu"
+        return 1
 
     @property
     def log_dir(self) -> str:
         return os.path.join(self.index_store_path, "logs")
+
+    @property
+    def embedding_model_url(self) -> str:
+        return "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5/resolve/main/onnx/model_q4.onnx?download=true"
+
+    @property
+    def embedding_model_path(self) -> Path:
+        return Path(self.index_store_path) / "models" / "embedding.onnx"
 
 
 def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:

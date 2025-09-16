@@ -1,19 +1,19 @@
 import os
 
 import pytest
-from sentence_transformers import SentenceTransformer
 
 from filechat import get_index
 from filechat.config import Config
+from filechat.embedder import Embedder
 
 
 @pytest.fixture
-def embedding_model(config: Config):
-    return SentenceTransformer(config.embedding_model, trust_remote_code=True)
+def embedder(config: Config):
+    return Embedder(config.embedding_model, config.embedding_model_path, config.embedding_model_url)
 
 
-def test_index_files(test_directory, config: Config, embedding_model: SentenceTransformer):
-    index, _ = get_index(test_directory, config, embedding_model)
+def test_index_files(test_directory, config: Config, embedder: Embedder):
+    index, _ = get_index(test_directory, config, embedder)
 
     indexed_files = [file.path() for file in index._files]
     assert len(indexed_files) == len(os.listdir(test_directory))
@@ -25,8 +25,8 @@ def test_index_files(test_directory, config: Config, embedding_model: SentenceTr
     assert len(index._files) == len(set(f.hash for f in index._files))
 
 
-def test_new_file(test_directory, config: Config, embedding_model: SentenceTransformer):
-    index, _ = get_index(test_directory, config, embedding_model)
+def test_new_file(test_directory, config: Config, embedder: Embedder):
+    index, _ = get_index(test_directory, config, embedder)
 
     new_file = "new_file.txt"
     with open(os.path.join(test_directory, new_file), "w") as f:
@@ -44,8 +44,8 @@ def test_new_file(test_directory, config: Config, embedding_model: SentenceTrans
     assert len(index._files) == len(set(f.hash for f in index._files))
 
 
-def test_file_change(test_directory, config: Config, embedding_model: SentenceTransformer):
-    index, _ = get_index(test_directory, config, embedding_model)
+def test_file_change(test_directory, config: Config, embedder: Embedder):
+    index, _ = get_index(test_directory, config, embedder)
     num_files_before = len(index._files)
 
     filename = "test.txt"
@@ -64,11 +64,11 @@ def test_file_change(test_directory, config: Config, embedding_model: SentenceTr
     assert len(index._files) == num_files_before
 
 
-def test_delete_file(test_directory, config: Config, embedding_model: SentenceTransformer):
-    index, _ = get_index(test_directory, config, embedding_model)
+def test_delete_file(test_directory, config: Config, embedder: Embedder):
+    index, _ = get_index(test_directory, config, embedder)
     os.remove(os.path.join(test_directory, "test.md"))
     os.remove(os.path.join(test_directory, "test.json"))
-    index, _ = get_index(test_directory, config, embedding_model)
+    index, _ = get_index(test_directory, config, embedder)
 
     indexed_files = [file.path() for file in index._files]
     assert "test.md" not in indexed_files
@@ -78,16 +78,14 @@ def test_delete_file(test_directory, config: Config, embedding_model: SentenceTr
     assert len(index._files) == index._vector_index.ntotal
 
 
-def test_delete_file_ignored_directory(
-    test_directory, config: Config, embedding_model: SentenceTransformer
-):
+def test_delete_file_ignored_directory(test_directory, config: Config, embedder: Embedder):
     ignored_dir = "temp_ignored"
     os.makedirs(os.path.join(test_directory, ignored_dir))
     ignored_file = os.path.join(ignored_dir, "ignored_file.txt")
     with open(os.path.join(test_directory, ignored_file), "w") as f:
         f.write("This file should be ignored")
 
-    index, _ = get_index(test_directory, config, embedding_model)
+    index, _ = get_index(test_directory, config, embedder)
     initial_count = len(index._files)
 
     indexed_files = [file.path() for file in index._files]
@@ -103,9 +101,9 @@ def test_delete_file_ignored_directory(
     assert index._vector_index.ntotal == initial_count - 1
 
 
-def test_delete_file_suffix(test_directory, config: Config, embedding_model: SentenceTransformer):
+def test_delete_file_suffix(test_directory, config: Config, embedder: Embedder):
     disallowed_file = "test.md"
-    index, _ = get_index(test_directory, config, embedding_model)
+    index, _ = get_index(test_directory, config, embedder)
     initial_count = len(index._files)
 
     indexed_files = [file.path() for file in index._files]
@@ -120,9 +118,9 @@ def test_delete_file_suffix(test_directory, config: Config, embedding_model: Sen
     assert index._vector_index.ntotal == initial_count - 1
 
 
-def test_rebuild(test_directory, config: Config, embedding_model: SentenceTransformer):
-    get_index(test_directory, config, embedding_model)
-    _, num_indexed = get_index(test_directory, config, embedding_model)
+def test_rebuild(test_directory, config: Config, embedder: Embedder):
+    get_index(test_directory, config, embedder)
+    _, num_indexed = get_index(test_directory, config, embedder)
     assert num_indexed == 0
-    _, num_indexed = get_index(test_directory, config, embedding_model, True)
+    _, num_indexed = get_index(test_directory, config, embedder, True)
     assert num_indexed == len(os.listdir(test_directory))
