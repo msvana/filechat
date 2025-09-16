@@ -28,14 +28,13 @@ def main():
     log_file = os.path.join(
         config.log_dir, datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + ".log"
     )
-    logging.basicConfig(level=logging.INFO) #, handlers=[logging.FileHandler(log_file)])
+    logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler(log_file)])
 
     embedder = Embedder(
         config.embedding_model, config.embedding_model_path, config.embedding_model_url
     )
 
     index, _ = get_index(args.directory, config, embedder, args.rebuild)
-    exit()
     watcher = FileWatcher(index, config)
     watcher.start()
 
