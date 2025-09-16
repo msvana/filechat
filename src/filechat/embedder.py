@@ -60,7 +60,7 @@ class Embedder:
         )
         assert isinstance(embeddings, list)
         assert isinstance(embeddings[0], np.ndarray)
-        embeddings = np.mean(embeddings[0], 1)
+        embeddings = embeddings[0][:, -1, :]
         norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
         embeddings /= norm
         return embeddings
