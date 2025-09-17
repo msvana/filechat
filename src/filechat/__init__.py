@@ -1,15 +1,14 @@
 import datetime
 import logging
+import os
 from argparse import ArgumentParser
 
-from sentence_transformers import SentenceTransformer
-
 from filechat.chat import Chat, ChatStore
-from filechat.config import load_config, CONFIG_PATH_DEFAULT
+from filechat.config import CONFIG_PATH_DEFAULT, load_config
+from filechat.embedder import Embedder
 from filechat.index import get_index
 from filechat.tui import FilechatApp
 from filechat.watcher import FileWatcher
-import os
 
 arg_parser = ArgumentParser(description="Chat with an LLM about your local project")
 arg_parser.add_argument("directory", type=str, help="Directory to index files from")
@@ -31,12 +30,11 @@ def main():
     )
     logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler(log_file)])
 
-    print(f"Using device {config.device}")
-    sentence_transformer = SentenceTransformer(
-        config.embedding_model, trust_remote_code=True, device=config.device
+    embedder = Embedder(
+        config.embedding_model, config.embedding_model_path, config.embedding_model_url
     )
 
-    index, _ = get_index(args.directory, config, sentence_transformer, args.rebuild)
+    index, _ = get_index(args.directory, config, embedder, args.rebuild)
     watcher = FileWatcher(index, config)
     watcher.start()
 
