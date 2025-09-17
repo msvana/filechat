@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FileChat — Local, Read-Only AI Coding Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #0d6efd;
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-dark: #212529;
+    --text-light: #6c757d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-dark); }
+
+  header {
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+    color: white;
+    text-align: center;
+    padding: 5rem 1rem 4rem;
+  }
+  header h1 { font-size: 3rem; margin-bottom: 1rem; }
+  header p { font-size: 1.3rem; margin-bottom: 2rem; }
+  header a { display: inline-block; background: white; color: var(--primary); padding: 1rem 2rem; font-weight: 600; border-radius: 12px; text-decoration: none; transition: all 0.2s; }
+  header a:hover { background: #e9ecef; transform: translateY(-2px); }
+
+  section { max-width: 900px; margin: auto; padding: 4rem 1rem; }
+  .video-placeholder {
+    background: #dee2e6;
+    border-radius: 12px;
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #495057;
+    margin-bottom: 3rem;
+  }
+
+  h2 { font-size: 2rem; margin-bottom: 1.5rem; text-align: center; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+  .feature {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+
+  .install { background: #e9ecef; padding: 1.5rem; border-radius: 12px; font-family: monospace; font-size: 1rem; transition: all 0.2s; word-break: break-word; }
+  label { display: block; margin-top: 1rem; font-weight: 600; }
+  select { width: 100%; padding: 0.6rem; margin-top: 0.25rem; border-radius: 8px; border: 1px solid #ced4da; font-size: 1rem; }
+
+  .cta { text-align: center; margin-top: 3rem; }
+  .cta a { background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 12px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+  .cta a:hover { background: #0b5ed7; transform: translateY(-2px); }
+
+  footer { text-align: center; padding: 3rem 1rem; color: var(--text-light); font-size: 0.9rem; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 2.2rem; }
+    header p { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FileChat</h1>
+  <p>A local, read-only AI coding assistant. Understand your codebase without giving up control.</p>
+  <a href="#install">Get Started</a>
+</header>
+
+<section>
+  <div class="video-placeholder">
+    🎬 Video demo coming soon
+  </div>
+
+  <h2>Key Features</h2>
+  <div class="features">
+    <div class="feature">✅ Understand your codebase instantly — no code changes, no risk.</div>
+    <div class="feature">✅ Fully local: your code never leaves your machine.</div>
+    <div class="feature">✅ Handles large projects with lightning-fast file search.</div>
+    <div class="feature">✅ Works with Python projects out of the box.</div>
+  </div>
+
+  <h2 id="install">Install FileChat</h2>
+  <p>Select your environment to get the correct install command:</p>
+
+  <label for="os">Operating System:</label>
+  <select id="os">
+    <option value="winmac">Windows / Mac</option>
+    <option value="linux">Linux</option>
+  </select>
+
+  <label for="hw" id="hw-label" style="display:none;">Hardware Acceleration:</label>
+  <select id="hw" style="display:none;">
+    <option value="cpu">CPU</option>
+    <option value="cuda">CUDA (Nvidia)</option>
+    <option value="xpu">XPU (Intel Arc)</option>
+  </select>
+
+  <label for="pkg">Package Manager:</label>
+  <select id="pkg">
+    <option value="pip">pip</option>
+    <option value="pipx">pipx</option>
+    <option value="poetry">poetry</option>
+    <option value="uv">uv</option>
+    <option value="uvtool">uv tool</option>
+  </select>
+
+  <div class="install" id="install-command">
+    pip install "filechat @ https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl"
+  </div>
+</section>
+
+<section class="cta">
+  <a href="https://github.com/msvana/filechat/issues">Try it & give feedback</a>
+</section>
+
+<footer>
+  🔒 <strong>Privacy first:</strong> FileChat never modifies your code. Everything stays local and private.
+</footer>
+
+<script>
+  const osSelect = document.getElementById('os');
+  const hwSelect = document.getElementById('hw');
+  const hwLabel = document.getElementById('hw-label');
+  const pkgSelect = document.getElementById('pkg');
+  const installDiv = document.getElementById('install-command');
+
+  function updateInstall() {
+    let os = osSelect.value;
+    let hw = hwSelect.value;
+    let pkg = pkgSelect.value;
+
+    if (os === 'linux') {
+      hwSelect.style.display = 'block';
+      hwLabel.style.display = 'block';
+    } else {
+      hwSelect.style.display = 'none';
+      hwLabel.style.display = 'none';
+      hw = 'default';
+    }
+
+    let url = 'https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-0.1.0-py3-none-any.whl';
+    if(os==='linux' && hw!=='default') {
+      url = `https://github.com/msvana/filechat/releases/download/v0.1.2/filechat-${hw}-0.1.0-py3-none-any.whl`;
+    }
+
+    let command = '';
+    switch(pkg) {
+      case 'pip': command = `pip install "filechat @ ${url}"`; break;
+      case 'pipx': command = `pipx install "filechat @ ${url}"`; break;
+      case 'poetry': command = `poetry add "filechat @ ${url}"`; break;
+      case 'uv': command = `uv install "filechat @ ${url}"`; break;
+      case 'uvtool': command = `uv tool install "filechat @ ${url}"`; break;
+    }
+
+    installDiv.textContent = command;
+  }
+
+  osSelect.addEventListener('change', updateInstall);
+  hwSelect.addEventListener('change', updateInstall);
+  pkgSelect.addEventListener('change', updateInstall);
+  updateInstall();
+</script>
+
+</body>
+</html>
+
