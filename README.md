@@ -3,8 +3,9 @@
 FileChat is an AI assistant designed to help users understand and improve their local projects.
 It allows you to chat about files in your local folder while maintaining full control over your code.
 
-https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
+Here is a short video:
 
+https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
 
 ## Features
 
@@ -20,35 +21,37 @@ https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
 
 - Python 3.12 or higher
 - A [Mistral AI](https://mistral.ai/) API key stored in the `MISTRAL_API_KEY` environment variable
+- On Windows, you need [Visual C++ Redistributable](https://learn.microsoft.com/en-au/cpp/windows/latest-supported-vc-redist?view=msvc-170).
+  It's very likely you have it already installed on your machine. 
 
-### Option 1: Install the pre-built wheel
+### Option 1: Install from PyPI
 
 You can use any Package management tool you like. Here is an example for `pip`:
 
 ```bash
-pip install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.6-py3-none-any.whl
+pip install filechat
 ```
 
 And here is an example of installing FileChat as a UV tool:
 
 ```bash
-uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.6-py3-none-any.whl
+uv tool install filechat
 ```
 
 **On Linux, you should also specify the hardware accelerator as an optional dependency**. We support `cpu`, `xpu` (Intel Arc), and `cuda`.
-If you don't specify the accelerator, you'll get a version with CUDA support, which might be unnecessarily large. Here is an example of 
+If you don't specify the accelerator, you'll get a version with CUDA support, which might be unnecessarily large. Here is an example of
 installing FileChat with `xpu` support:
 
 PIP:
 
 ```bash
-pip install "filechat[xpu] @ https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.6-py3-none-any.whl"
+pip install filechat[xpu]
 ```
 
 UV Tool:
 
 ```bash
-uv tool install https://github.com/msvana/filechat/releases/download/latest/filechat-0.1.6-py3-none-any.whl[xpu]
+uv tool install filechat[xpu]
 ```
 
 ### Option 2: Clone the repository and use UV
@@ -79,7 +82,7 @@ uv sync --extra xpu
 ## Usage
 
 ```bash
-uv run filechat /path/to/your/project
+filechat /path/to/your/project
 ```
 
 ## Configuration
@@ -97,15 +100,14 @@ Here is a full example:
     "api_key": "[MISTRAL_API_KEY]"
 }
 ```
+
 ## Roadmap
 
 ### Short term (weeks)
 
 - Add support for other models
 - Add tools for browsing the filesystem
-- Improve inference for embedding models (switch from sentence-transformers to an ONNX runtime)
 - Support CUDA on Windows
-- Publish on PyPI
 
 ### Long term (months)
 

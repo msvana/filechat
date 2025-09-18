@@ -1,6 +1,6 @@
 [project]
 name = "filechat"
-version = "0.2.0"
+version = "0.2.1"
 description = "A local read-only AI coding assistant"
 readme = "README.md"
 license = "MIT"
@@ -11,6 +11,7 @@ dependencies = [
   "faiss-cpu>=1.11.0.post1",
   "mistralai>=1.9.3",
   "onnxruntime>=1.22.1",
+  "pip-system-certs>=5.2",
   "pydantic>=2.11.7",
   "pyperclip>=1.9.0",
   "textual>=5.3.0",

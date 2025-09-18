@@ -23,26 +23,3 @@ jobs:
               with:
                   files: dist/*.whl
                   token: ${{ secrets.GITHUB_TOKEN }}
-            - name: Get version from tag
-              id: get_version
-              run: |
-                  VERSION=${GITHUB_REF#refs/tags/v}
-                  echo "version=$VERSION" >> $GITHUB_OUTPUT
-            - name: Publish latest release
-              uses: softprops/action-gh-release@v2
-              with:
-                  tag_name: latest
-                  files: dist/*.whl
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  prerelease: true
-            - name: Update README with latest version
-              run: |
-                  LATEST_VERSION=${{ steps.get_version.outputs.version }}
-                  sed -i "s|filechat-[0-9]\+\.[0-9]\+\.[0-9]\+-py3-none-any\.whl|filechat-$LATEST_VERSION-py3-none-any.whl|g" README.md
-                  git config --global user.name "github-actions"
-                  git config --global user.email "github-actions@github.com"
-                  git pull origin main
-                  git checkout main
-                  git add README.md
-                  git commit -m "Update README for v$LATEST_VERSION"
-                  git push origin HEAD:main
