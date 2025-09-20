@@ -7,15 +7,9 @@ from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
-import tqdm
 from tokenizers import Encoding, Tokenizer
 
-
-class DownloadProgressBar(tqdm.tqdm):
-    def update_to(self, b=1, bsize=1, tsize=None):
-        if tsize is not None:
-            self.total = tsize
-        self.update(b * bsize - self.n)
+from filechat.utils import DownloadProgressBar
 
 
 class Embedder:
@@ -33,7 +27,11 @@ class Embedder:
 
         self._session = ort.InferenceSession(
             self._model_path,
-            providers=["CUDAExecutionProvider","OpenVINOExecutionProvider", "CPUExecutionProvider"],
+            providers=[
+                "CUDAExecutionProvider",
+                "OpenVINOExecutionProvider",
+                "CPUExecutionProvider",
+            ],
             provider_options=[{}, {"device_type": "AUTO:GPU,CPU"}, {}],
         )
 

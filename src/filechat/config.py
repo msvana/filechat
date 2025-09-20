@@ -63,6 +63,14 @@ class Config(BaseModel):
         return "nomic-ai/nomic-embed-text-v1.5"
 
     @property
+    def embedding_model_url(self) -> str:
+        return "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5/resolve/main/onnx/model_q4.onnx?download=true"
+
+    @property
+    def embedding_model_path(self) -> Path:
+        return Path(self.index_store_path) / "models" / "embedding.onnx"
+
+    @property
     def index_batch_size(self) -> int:
         return 1
 
@@ -71,12 +79,8 @@ class Config(BaseModel):
         return os.path.join(self.index_store_path, "logs")
 
     @property
-    def embedding_model_url(self) -> str:
-        return "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5/resolve/main/onnx/model_q4.onnx?download=true"
-
-    @property
-    def embedding_model_path(self) -> Path:
-        return Path(self.index_store_path) / "models" / "embedding.onnx"
+    def llama_cpp_path(self) -> Path:
+        return Path(self.index_store_path) / "models" / "llama_cpp"
 
 
 def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:

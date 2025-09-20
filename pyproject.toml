@@ -56,4 +56,9 @@ enable-unstable-feature = [
 allow-direct-references = true
 
 [dependency-groups]
-dev = ["pytest>=8.4.1"]
+dev = [
+    "onnxruntime-tools>=1.7.0",
+    "onnxruntime[quantization]>=1.22.1",
+    "pytest>=8.4.1",
+    "torch>=2.8.0",
+]
