@@ -103,8 +103,8 @@ class Config(BaseModel):
         return Path(self.index_store_path) / "models" / "embedding.onnx"
 
 
-def load_config(path: str = CONFIG_PATH_DEFAULT) -> Config:
-    if os.path.exists(path):
+def load_config(path: str = CONFIG_PATH_DEFAULT, discard: bool=False) -> Config:
+    if os.path.exists(path) and not discard:
         with open(path, "r") as config_file:
             config_json = json.load(config_file)
 

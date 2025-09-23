@@ -3,6 +3,9 @@ import logging
 import os
 from argparse import ArgumentParser
 
+from mistralai import Mistral
+from openai import OpenAI
+
 from filechat.chat import Chat, ChatStore
 from filechat.config import CONFIG_PATH_DEFAULT, load_config
 from filechat.embedder import Embedder
@@ -18,11 +21,14 @@ arg_parser.add_argument(
 arg_parser.add_argument(
     "-c", "--config", type=str, help="Path to a config file", default=CONFIG_PATH_DEFAULT
 )
+arg_parser.add_argument(
+    "-s", "--setup", action="store_true", help="Discard config and run LLM provider setup"
+)
 
 
 def main():
     args = arg_parser.parse_args()
-    config = load_config(args.config)
+    config = load_config(args.config, args.setup)
 
     os.makedirs(config.log_dir, exist_ok=True)
     log_file = os.path.join(
@@ -38,8 +44,13 @@ def main():
     watcher = FileWatcher(index, config)
     watcher.start()
 
-    chat = Chat(config.model, config.api_key)
-    chat_store = ChatStore(args.directory, config)
+    if config.model.provider == "openai":
+        client = OpenAI(api_key=config.model.api_key)
+    elif config.model.provider == "mistral":
+        client = Mistral(api_key=config.model.api_key)
+
+    chat = Chat(client, config.model.model)
+    chat_store = ChatStore(args.directory, config, client)
 
     app = FilechatApp(chat, index, chat_store)
     app.run()
