@@ -65,20 +65,23 @@ class HistoryScreen(ModalScreen):
 class FilechatApp(App):
     CSS = """
         Static {
-            padding: 0 1;
+            padding: 0;
             margin: 0;
         }
 
         Static.llm {
-            border: solid green;
+            border-top: solid green;
+            border-bottom: solid green;
         }
 
         Static.user {
-            border: solid blue;
+            border-top: solid blue;
+            border-bottom: solid blue;
         }
         
         Static.files {
-            border: solid orange;
+            border-top: solid orange;
+            border-bottom: solid orange;
         }
 
         Input {
@@ -149,9 +152,11 @@ class FilechatApp(App):
         self.call_from_thread(self._user_input.set_loading, True)
 
         message_widget = Static(message, classes="user")
+        message_widget.border_title = "User"
         self.call_from_thread(self._chat_list.mount, message_widget)
 
         output_widget = Static(classes="llm")
+        output_widget.border_title = "Assistant"
         self.call_from_thread(self._chat_list.mount, output_widget)
 
         files = self._index.query(message)
@@ -167,6 +172,7 @@ class FilechatApp(App):
 
         files_used = "; ".join(f.path() for f in files)
         files_widget = Static(files_used, classes="files")
+        files_widget.border_title = "Files"
         self.call_from_thread(self._chat_list.mount, files_widget)
         self.call_from_thread(self._chat_list.scroll_end)
 
@@ -185,13 +191,16 @@ class FilechatApp(App):
         for message in self._chat.messages:
             if message["role"] == "system":
                 continue
+
             message_widget = Static(
                 message["content"], classes="user" if message["role"] == "user" else "llm"
             )
+            message_widget.border_title = "User" if message["role"] == "user" else "Assistant"
             self._chat_list.mount(message_widget)
 
             if message["role"] == "assistant":
                 files_widget = Static("; ".join(message["files_used"]), classes="files")
+                files_widget.border_title = "Files"
                 self._chat_list.mount(files_widget)
 
         self._chat_list.scroll_end()
