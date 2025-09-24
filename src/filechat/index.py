@@ -134,7 +134,7 @@ class FileIndex:
             logging.info(f"File {relative_path} is already up to date")
             return None
 
-        if idx:
+        if idx is not None:
             self._delete_file(idx)
 
         return indexed_file

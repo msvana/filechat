@@ -82,7 +82,6 @@ class Config(BaseModel):
     ]
     index_store_path: str = os.path.join(HOME_DIR, ".cache", "filechat")
     model: ModelConfig
-    api_key: str | None = os.environ.get("MISTRAL_API_KEY")
 
     @property
     def embedding_model(self) -> str:
