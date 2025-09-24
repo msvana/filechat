@@ -6,7 +6,6 @@ from textual.widgets import Input, ListItem, ListView, Static
 
 from filechat.chat import Chat, ChatStore
 from filechat.index import FileIndex
-import pyperclip
 
 
 class HistoryScreen(ModalScreen):
@@ -58,7 +57,7 @@ class HistoryScreen(ModalScreen):
 
     def _delete_selected_chat(self, selected_index: int):
         chat_id = self._chats.pop(selected_index)[0]
-        self._chat_store.delete(chat_id) 
+        self._chat_store.delete(chat_id)
         self._history_view.remove_items([selected_index])
 
 
@@ -140,12 +139,6 @@ class FilechatApp(App):
         elif user_message != "":
             self.send_message(event.value)
         self._user_input.value = ""
-
-    def key_c(self):
-        selected_text = self.screen.get_selected_text()
-        self.screen.clear_selection()
-        if selected_text:
-            pyperclip.copy(selected_text)
 
     @work(thread=True)
     def send_message(self, message: str):

@@ -3,6 +3,7 @@ from hashlib import sha256
 from textwrap import dedent
 
 from mistralai import Mistral
+from openai import OpenAI
 
 from filechat.config import Config
 from filechat.index import IndexedFile
@@ -32,29 +33,35 @@ class Chat:
     Respond with actionable advice. When suggesting code changes, show specific examples using the project's existing conventions.
     """)
 
-    def __init__(self, model: str, api_key: str | None, chat_id: int | None = None):
+    def __init__(self, client: Mistral | OpenAI, model: str, chat_id: int | None = None):
         self._message_history: list[dict] = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
         self._model = model
-        assert api_key is not None, (
-            "Please provide an API key, either in the config file or in the MISTRAL_API_KEY"
-            " environment variable"
-        )
-        self._client = Mistral(api_key=api_key)
+        self._client = client
         self._id = chat_id
 
     def user_message(self, message: str, files: list[IndexedFile]):
         user_message = {"role": "user", "content": message}
         context_message = self._get_context_message(files)
         self._message_history.append(user_message)
-        response = self._client.chat.stream(
-            model=self._model,
-            messages=self._message_history + [context_message],  # type: ignore
-        )
+
+        if isinstance(self._client, Mistral):
+            response = self._client.chat.stream(
+                model=self._model,
+                messages=self._message_history + [context_message],  # type: ignore
+            )
+        else:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=self._message_history + [context_message],  # type: ignore
+                stream=True,
+            )
 
         response_str = ""
 
         for chunk in response:
-            chunk_content = chunk.data.choices[0].delta.content
+            if hasattr(chunk, "data"):
+                chunk = chunk.data
+            chunk_content = chunk.choices[0].delta.content  # type: ignore
             response_str += str(chunk_content)
             yield str(chunk_content)
 
@@ -118,7 +125,8 @@ class Chat:
 class ChatStore:
     VERSION_LATEST = 1
 
-    def __init__(self, directory: str, config: Config):
+    def __init__(self, directory: str, config: Config, client: Mistral | OpenAI):
+        self._client = client
         self._file_path = self._get_file_path(directory, config.index_store_path)
         self._config = config
         if not os.path.exists(self._file_path):
@@ -135,7 +143,7 @@ class ChatStore:
         return file_path
 
     def new_chat(self) -> Chat:
-        return Chat(self._config.model, self._config.api_key)
+        return Chat(self._client, self._config.model.model)
 
     def store(self, chat: Chat):
         if chat.chat_id is None:
@@ -166,7 +174,7 @@ class ChatStore:
         if not chat:
             return None
 
-        chat = Chat(self._config.model, self._config.api_key, chat_id)
+        chat = Chat(self._client, self._config.model.model, chat_id)
         self._cursor.execute("SELECT * FROM messages WHERE chat_id = ?", (chat_id,))
         messages_raw = self._cursor.fetchall()
         messages = []
@@ -188,7 +196,6 @@ class ChatStore:
         self._cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
         self._conn.commit()
         return self._cursor.rowcount
-
 
     def _create_database(self) -> tuple[sqlite3.Connection, sqlite3.Cursor]:
         conn = sqlite3.connect(self._file_path)
