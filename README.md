@@ -3,6 +3,8 @@
 FileChat is an AI assistant designed to help users understand and improve their local projects.
 It allows you to chat about files in your local folder while maintaining full control over your code.
 
+**FileChat is still quite new and under intense development. Expect bugs! If you find some or if you have a feature suggestion, please create an issue**
+
 Here is a short video:
 
 https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
