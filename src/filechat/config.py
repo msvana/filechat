@@ -23,6 +23,7 @@ MODEL_CHOICES = {
         "magistral-medium-2509",
         "codestral-2508",
     ],
+    "openai-selfhosted": None,
 }
 
 
@@ -30,6 +31,7 @@ class ModelConfig(BaseModel):
     provider: str
     model: str
     api_key: str
+    base_url: str | None = None
 
 
 class Config(BaseModel):
@@ -103,7 +105,7 @@ class Config(BaseModel):
         return Path(self.index_store_path) / "models" / "embedding.onnx"
 
 
-def load_config(path: str = CONFIG_PATH_DEFAULT, discard: bool=False) -> Config:
+def load_config(path: str = CONFIG_PATH_DEFAULT, discard: bool = False) -> Config:
     if os.path.exists(path) and not discard:
         with open(path, "r") as config_file:
             config_json = json.load(config_file)
@@ -131,16 +133,33 @@ def load_config(path: str = CONFIG_PATH_DEFAULT, discard: bool=False) -> Config:
 def setup_config() -> Config:
     rprint("[blue]Hi. Looks like you don't have a valid config file yet. Let's create one.[/blue]")
 
-    print("Choose your LLM provider (mistral, openai):")
+    # Choose provider
+    provider_list = list(MODEL_CHOICES.keys())
+    print(f"Choose your LLM provider ({", ".join(provider_list)}):")
     while True:
-        provider = input().strip().lower()
-        if provider in ["mistral", "openai"]:
+        provider = input(">>> ").strip().lower()
+        if provider in provider_list:
             break
         print("You entered an incorrect choice, try again (mistral, openai):")
 
+    # Set endpoint
+    base_url = None
+    if provider == "openai-selfhosted":
+        print("You have chosen a self-hosted OpenAI compatible server.")
+        print("Please provide the base URL:")
+        while True:
+            base_url = input(">>> ").strip()
+            if base_url != "":
+                break
+            else:
+                print("Base URL cannot be empty. Try again:")
+
+    # Set API key
     api_key_env = f"{provider.upper()}_API_KEY"
     api_key_env_key = os.environ.get(api_key_env)
-    if api_key_env_key:
+    if provider == "openai-selfhosted":
+        api_key_env_message = "or press ENTER to keep the API key empty"
+    elif api_key_env_key:
         api_key_env_message = f"or presss ENTER to use ${api_key_env}"
     else:
         api_key_env_message = ""
@@ -148,8 +167,8 @@ def setup_config() -> Config:
     print(f"Enter your API key {api_key_env_message}:")
 
     while True:
-        api_key = input().strip()
-        if api_key != "":
+        api_key = input(">>> ").strip()
+        if api_key != "" or provider == "openai-selfhosted":
             break
 
         if api_key_env_key:
@@ -158,19 +177,41 @@ def setup_config() -> Config:
 
         print("You didn't enter any API key, try again:")
 
+    # Set model
+    if MODEL_CHOICES[provider] is not None:
+        model = _choose_model_choices(provider)
+    else:
+        model = _choose_model_any()
+
+    model_config = ModelConfig(provider=provider, model=model, api_key=api_key, base_url=base_url)
+    config = Config(model=model_config)
+    return config
+
+
+def _choose_model_choices(provider: str) -> str:
     print("Choose a model. You have the following options:")
-    
+
     for model in MODEL_CHOICES[provider]:
         print(f"- {model}")
 
     print("Your choice:")
 
     while True:
-        model = input().strip().lower()
+        model = input(">>> ").strip().lower()
         if model in MODEL_CHOICES[provider]:
             break
         print("This model isn't in the list, try again:")
 
-    model_config = ModelConfig(provider=provider, model=model, api_key=api_key)
-    config = Config(model=model_config)
-    return config
+    return model
+
+
+def _choose_model_any() -> str:
+    print("Enter the name of the model you would like to use:")
+
+    while True:
+        model = input(">>> ").strip()
+        if model != "":
+            break
+        print("Model name cannot be emptry. Try again:")
+
+    return model

@@ -46,6 +46,8 @@ def main():
 
     if config.model.provider == "openai":
         client = OpenAI(api_key=config.model.api_key)
+    elif config.model.provider == "openai-selfhosted":
+        client = OpenAI(api_key=config.model.api_key, base_url=config.model.base_url)
     elif config.model.provider == "mistral":
         client = Mistral(api_key=config.model.api_key)
 
