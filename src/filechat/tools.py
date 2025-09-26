@@ -1,6 +1,25 @@
 from pathlib import Path
 from filechat.config import Config
 
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_directory",
+            "description": "Lists files and directories in a given directory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path relative to project. Do not explore paths outside the project directory",
+                    }
+                },
+            },
+        },
+    }
+]
+
 
 def list_directory(project_path: Path, directory: str, config: Config) -> list[dict]:
     path = Path(directory).resolve()

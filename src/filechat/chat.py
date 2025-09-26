@@ -1,14 +1,15 @@
+import json
 import os
+import sqlite3
 from hashlib import sha256
 from textwrap import dedent
 
 from mistralai import Mistral
 from openai import OpenAI
 
+from filechat import tools
 from filechat.config import Config
 from filechat.index import IndexedFile
-import sqlite3
-import json
 
 
 class Chat:
@@ -48,27 +49,51 @@ class Chat:
             response = self._client.chat.stream(
                 model=self._model,
                 messages=self._message_history + [context_message],  # type: ignore
+                tools=tools.TOOLS,  # type: ignore
             )
         else:
             response = self._client.chat.completions.create(
                 model=self._model,
                 messages=self._message_history + [context_message],  # type: ignore
+                tools=tools.TOOLS,  # type: ignore
                 stream=True,
             )
 
         response_str = ""
+        tool_call_id = tool_call_name = tool_call_arguments = None
 
         for chunk in response:
             if hasattr(chunk, "data"):
                 chunk = chunk.data
-            chunk_content = chunk.choices[0].delta.content  # type: ignore
+            
+            chunk_delta = chunk.choices[0].delta  # type: ignore
+
+            if not chunk_delta.content and not chunk_delta.tool_calls:
+                continue
+
+            if chunk_delta.tool_calls:
+                if not tool_call_id:
+                    tool_call_id = chunk_delta.tool_calls[0].id
+                    tool_call_name = chunk_delta.tool_calls[0].function.name
+                    tool_call_arguments = chunk_delta.tool_calls[0].function.arguments
+                else:
+                    assert isinstance(tool_call_arguments, str)
+                    tool_call_arguments += str(chunk_delta.tool_calls[0].function.arguments)
+                continue
+
+            chunk_content = chunk_delta.content
             response_str += str(chunk_content)
             yield str(chunk_content)
 
+        if tool_call_id:
+            print(tool_call_id, tool_call_name, tool_call_arguments)
+
         filenames = [f.path() for f in files]
-        self._message_history.append(
-            {"role": "assistant", "content": response_str, "files_used": filenames}
-        )
+        self._message_history.append({
+            "role": "assistant",
+            "content": response_str,
+            "files_used": filenames,
+        })
 
     @property
     def chat_id(self) -> int | None:

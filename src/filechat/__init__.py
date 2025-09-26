@@ -55,7 +55,10 @@ def main():
     chat_store = ChatStore(args.directory, config, client)
 
     app = FilechatApp(chat, index, chat_store)
-    app.run()
+    for c in chat.user_message("what is in the main directory", []):
+        print(c)
+
+    # app.run()
 
     watcher.stop()
 
