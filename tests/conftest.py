@@ -4,13 +4,18 @@ import tempfile
 import pytest
 import os
 from filechat.index import IndexStore
-from filechat.config import Config
+from filechat.config import Config, ModelConfig
 
 
 @pytest.fixture
 def config():
     index_dir = tempfile.mkdtemp()
-    yield Config(index_store_path=index_dir)
+    model_config = ModelConfig(
+        provider="mistral",
+        model="mistral-medium-2508",
+        api_key=os.environ.get("MISTRAL_API_KEY", ""),
+    )
+    yield Config(index_store_path=index_dir, model=model_config)
     shutil.rmtree(index_dir)
 
 
