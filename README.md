@@ -7,7 +7,8 @@ It allows you to chat about files in your local folder while maintaining full co
 
 Here is a short video:
 
-https://github.com/user-attachments/assets/dd3c6617-b141-47ab-926e-c62abcc7b4a6
+[filechat.webm](https://github.com/user-attachments/assets/c6fc6f1c-cea9-432e-bb80-0639ec6a01e0)
+
 
 ## Features
 
