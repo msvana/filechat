@@ -61,4 +61,7 @@ preview = true
 allow-direct-references = true
 
 [dependency-groups]
-dev = ["pytest>=8.4.1"]
+dev = [
+    "debugpy>=1.8.17",
+    "pytest>=8.4.1",
+]

@@ -169,6 +169,7 @@ class FilechatApp(App):
                     output_text = f">>> Tool call: {chunk['name']}\n"
                     output_text += f">>> Result: {chunk['content']}"
                     message = None
+                    next_message = True
                 self.call_from_thread(output_widget.update, output_text)
                 self.call_from_thread(self._chat_list.scroll_end)
 

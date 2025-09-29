@@ -62,13 +62,13 @@ class Chat:
         if isinstance(self._client, Mistral):
             response = self._client.chat.stream(
                 model=self._model,
-                messages=self._message_history + [context_message],  # type: ignore
+                messages=self._message_history + context_message,  # type: ignore
                 tools=tools.TOOLS,  # type: ignore
             )
         else:
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=self._message_history + [context_message],  # type: ignore
+                messages=self._message_history + context_message,  # type: ignore
                 tools=tools.TOOLS,  # type: ignore
                 stream=True,
             )
@@ -149,7 +149,7 @@ class Chat:
             title += "..."
         return title
 
-    def _get_context_message(self, files: list[IndexedFile]) -> dict:
+    def _get_context_message(self, files: list[IndexedFile]) -> list[dict]:
         message = (
             "Here are the most relevant files to user's query found using embedding search."
             "These are not the same as files returned via a tool call. Do no confuse the two."
@@ -163,7 +163,14 @@ class Chat:
             message += "</file>"
 
         message += "</context>"
-        return {"role": "user", "content": message}
+
+        return [
+            {
+                "role": "assistant",
+                "content": "Please also provide files relevant to the qeuery obtained via calculating embedding similarity. It might be useful, or not. Either way, I'd like to see it.",
+            },
+            {"role": "user", "content": message},
+        ]
 
     def _call_tool(self, tool_call_id: str, tool_call_name: str, tool_call_arguments: str) -> dict:
         arguments_parsed: dict = json.loads(tool_call_arguments)
