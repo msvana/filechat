@@ -51,14 +51,11 @@ def main():
     elif config.model.provider == "mistral":
         client = Mistral(api_key=config.model.api_key)
 
-    chat = Chat(client, config.model.model)
+    chat = Chat(client, config.model.model, config, args.directory)
     chat_store = ChatStore(args.directory, config, client)
 
     app = FilechatApp(chat, index, chat_store)
-    for c in chat.user_message("what is in the main directory", []):
-        print(c)
-
-    # app.run()
+    app.run()
 
     watcher.stop()
 
