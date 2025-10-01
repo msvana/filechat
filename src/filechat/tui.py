@@ -7,6 +7,7 @@ from textual.widgets import Input, ListItem, ListView, Static
 
 from filechat.chat import Chat, ChatStore
 from filechat.index import FileIndex
+from filechat.utils import truncate_text
 
 
 class HistoryScreen(ModalScreen):
@@ -167,7 +168,7 @@ class FilechatApp(App):
                     next_message = False
                 elif isinstance(chunk, dict):
                     output_text = f">>> Tool call: {chunk['name']}\n"
-                    output_text += f">>> Result: {chunk['content']}"
+                    output_text += f">>> Result: {truncate_text(chunk['content'])}"
                     message = None
                     next_message = True
                 self.call_from_thread(output_widget.update, output_text)
@@ -200,7 +201,7 @@ class FilechatApp(App):
 
             if "tool_call_id" in message:
                 output_text = f">>> Tool call: {message['name']}\n"
-                output_text += f">>> Result: {message['content']}"
+                output_text += f">>> Result: {truncate_text(message['content'])}"
                 message_widget = Static(output_text, classes="llm")
                 self._chat_list.mount(message_widget)
                 continue

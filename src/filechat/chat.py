@@ -11,6 +11,7 @@ from openai import OpenAI
 from filechat import tools
 from filechat.config import Config
 from filechat.index import IndexedFile
+from filechat.utils import truncate_text
 
 
 class Chat:
@@ -72,6 +73,7 @@ class Chat:
                 messages=self._history_with_context(files),  # type: ignore
                 tools=tools.TOOLS,  # type: ignore
                 stream=True,
+                parallel_tool_calls=False,
             )
 
         response_str = ""
@@ -131,24 +133,8 @@ class Chat:
         if len(self._message_history) < 2:
             return "New chat"
 
-        title_words = []
-        title_length_without_spaces = 0
         first_user_message = self._message_history[1]["content"]
-        first_user_message_words = first_user_message.split(" ")
-
-        for word in first_user_message_words:
-            if (
-                title_length_without_spaces + len(title_words) - 1 + len(word)
-                > self.TITLE_MAX_LENGTH
-            ):
-                break
-            title_words.append(word)
-            title_length_without_spaces += len(word)
-
-        title = " ".join(title_words)
-        if len(title) < len(first_user_message):
-            title += "..."
-        return title
+        return truncate_text(first_user_message, 50)
 
     def _history_with_context(self, files: list[IndexedFile]) -> list[dict]:
         message = (
@@ -166,10 +152,13 @@ class Chat:
         message += "</context>"
 
         messages = self._message_history.copy()
-        messages.insert(1, {
-            "role": "system",
-            "content": message,
-        })
+        messages.insert(
+            1,
+            {
+                "role": "system",
+                "content": message,
+            },
+        )
 
         return messages
 
@@ -238,7 +227,7 @@ class ChatStore:
         return file_path
 
     def new_chat(self) -> Chat:
-        return Chat(self._client, self._config.model.model)
+        return Chat(self._client, self._config.model.model, self._config, self._project_directory)
 
     def store(self, chat: Chat):
         if chat.chat_id is None:
