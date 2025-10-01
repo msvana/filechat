@@ -1,7 +1,6 @@
 import json
 import os
 import sqlite3
-from cgi import print_directory
 from hashlib import sha256
 from pathlib import Path
 from textwrap import dedent
@@ -33,6 +32,10 @@ class Chat:
     - Identify inconsistencies or potential issues
     - Provide concrete, implementable solutions
     - This doesn't cover every file in the project, only the most relevant ones. You can use tools to get other files if you consider it useful
+
+    You have programmatic tools to inspect the project (list_directory and read_file). 
+    When you need any file contents or directory listing to answer correctly, prefer using those tools instead of guessing.
+    If you call read_file, pass the exact relative path within the project.
     
     Respond with actionable advice. When suggesting code changes, show specific examples using the project's existing conventions.
     """)
@@ -53,8 +56,6 @@ class Chat:
         self._id = chat_id
 
     def user_message(self, message: str | None, files: list[IndexedFile]):
-        context_message = self._get_context_message(files)
-
         if message:
             user_message = {"role": "user", "content": message}
             self._message_history.append(user_message)
@@ -62,13 +63,13 @@ class Chat:
         if isinstance(self._client, Mistral):
             response = self._client.chat.stream(
                 model=self._model,
-                messages=self._message_history + context_message,  # type: ignore
+                messages=self._history_with_context(files),  # type: ignore
                 tools=tools.TOOLS,  # type: ignore
             )
         else:
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=self._message_history + context_message,  # type: ignore
+                messages=self._history_with_context(files),  # type: ignore
                 tools=tools.TOOLS,  # type: ignore
                 stream=True,
             )
@@ -149,7 +150,7 @@ class Chat:
             title += "..."
         return title
 
-    def _get_context_message(self, files: list[IndexedFile]) -> list[dict]:
+    def _history_with_context(self, files: list[IndexedFile]) -> list[dict]:
         message = (
             "Here are the most relevant files to user's query found using embedding search."
             "These are not the same as files returned via a tool call. Do no confuse the two."
@@ -164,20 +165,26 @@ class Chat:
 
         message += "</context>"
 
-        return [
-            {
-                "role": "assistant",
-                "content": "Please also provide files relevant to the qeuery obtained via calculating embedding similarity. It might be useful, or not. Either way, I'd like to see it.",
-            },
-            {"role": "user", "content": message},
-        ]
+        messages = self._message_history.copy()
+        messages.insert(1, {
+            "role": "system",
+            "content": message,
+        })
+
+        return messages
 
     def _call_tool(self, tool_call_id: str, tool_call_name: str, tool_call_arguments: str) -> dict:
         arguments_parsed: dict = json.loads(tool_call_arguments)
-
         if tool_call_name == "list_directory":
             try:
                 result = tools.list_directory(
+                    self._project_directory, arguments_parsed["path"], self._config
+                )
+            except Exception as e:
+                result = e
+        elif tool_call_name == "read_file":
+            try:
+                result = tools.read_file(
                     self._project_directory, arguments_parsed["path"], self._config
                 )
             except Exception as e:
