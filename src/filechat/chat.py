@@ -6,7 +6,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from mistralai import Mistral
-from openai import OpenAI
+from openai import OpenAI, omit
 
 from filechat import tools
 from filechat.config import Config
@@ -56,7 +56,7 @@ class Chat:
         self._project_directory = Path(project_directory)
         self._id = chat_id
 
-    def user_message(self, message: str | None, files: list[IndexedFile]):
+    def user_message(self, message: str | None, files: list[IndexedFile], use_tools: bool = True):
         if message:
             user_message = {"role": "user", "content": message}
             self._message_history.append(user_message)
@@ -65,15 +65,15 @@ class Chat:
             response = self._client.chat.stream(
                 model=self._model,
                 messages=self._history_with_context(files),  # type: ignore
-                tools=tools.TOOLS,  # type: ignore
+                tools=tools.TOOLS if use_tools else None,  # type: ignore
             )
         else:
             response = self._client.chat.completions.create(
                 model=self._model,
                 messages=self._history_with_context(files),  # type: ignore
-                tools=tools.TOOLS,  # type: ignore
+                tools=tools.TOOLS if use_tools else None,  # type: ignore
                 stream=True,
-                parallel_tool_calls=False,
+                parallel_tool_calls=False if use_tools else omit,
             )
 
         response_str = ""

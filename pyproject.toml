@@ -64,4 +64,5 @@ allow-direct-references = true
 dev = [
     "debugpy>=1.8.17",
     "pytest>=8.4.1",
+    "pytest-asyncio>=1.2.0",
 ]
