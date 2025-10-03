@@ -66,6 +66,7 @@ class Chat:
                 model=self._model,
                 messages=self._history_with_context(files),  # type: ignore
                 tools=tools.TOOLS if use_tools else None,  # type: ignore
+                tool_choice="auto" if use_tools else "none"
             )
         else:
             response = self._client.chat.completions.create(
