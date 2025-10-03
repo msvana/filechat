@@ -7,18 +7,22 @@ on:
     workflow_dispatch:
 
 jobs:
-    unit:
-        runs-on: ubuntu-latest
+    tests:
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest]
+                python-version: ["3.12"]
+        runs-on: ${{ matrix.os }}
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-python@v5
               with:
-                  python-version: "3.12"
+                  python-version: ${{ matrix.python-version }}
             - uses: astral-sh/setup-uv@v3
             - name: Install deps
               run: uv sync
             - name: Run tests
               env:
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  MISTTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
               run: uv run pytest -q
