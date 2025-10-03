@@ -32,7 +32,7 @@ async def test_basic_workflow(config: Config, client: OpenAI | Mistral):
         await pilot.press(*message_1)
         await pilot.press("enter")
 
-        for _ in range(8):
+        for _ in range(20):
             await asyncio.sleep(1)
 
             user_messages = cast(list[Static], list(pilot.app.query("Static.user")))
@@ -66,7 +66,7 @@ async def test_basic_workflow(config: Config, client: OpenAI | Mistral):
         await pilot.press(*message_2)
         await pilot.press("enter")
 
-        for _ in range(18):
+        for _ in range(30):
             await asyncio.sleep(1)
 
             user_messages = cast(list[Static], list(pilot.app.query("Static.user")))
@@ -125,7 +125,7 @@ async def test_tool_use(config: Config, client: OpenAI | Mistral):
         await pilot.press(*message_1)
         await pilot.press("enter")
 
-        for _ in range(10):
+        for _ in range(20):
             await asyncio.sleep(1)
             llm_messages = cast(list[Static], list(pilot.app.query("Static.llm")))
             if len(llm_messages) == 2 and "list_directory" in str(llm_messages[0].content):
@@ -140,7 +140,7 @@ async def test_tool_use(config: Config, client: OpenAI | Mistral):
         await pilot.press(*message_2)
         await pilot.press("enter")
 
-        for _ in range(10):
+        for _ in range(20):
             await asyncio.sleep(1)
             llm_messages = cast(list[Static], list(pilot.app.query("Static.llm")))
             if len(llm_messages) == 4 and "read_file" in str(llm_messages[-2].content):
