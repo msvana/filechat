@@ -1,3 +1,4 @@
+import logging
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Center, Vertical, VerticalScroll
@@ -6,10 +7,10 @@ from textual.widgets import Input, ListItem, ListView, Static
 
 from filechat.chat import Chat, ChatStore
 from filechat.index import FileIndex
+from filechat.utils import truncate_text
 
 
 class HistoryScreen(ModalScreen):
-
     def __init__(self, chat_store: ChatStore, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._history_view = ListView()
@@ -141,33 +142,46 @@ class FilechatApp(App):
         self._user_input.value = ""
 
     @work(thread=True)
-    def send_message(self, message: str):
+    def send_message(self, message: str | None):
         self.call_from_thread(self._user_input.set_loading, True)
+        next_message = True
 
-        message_widget = Static(message, classes="user")
-        message_widget.border_title = "User"
-        self.call_from_thread(self._chat_list.mount, message_widget)
+        while next_message:
+            if message:
+                message_widget = Static(message, classes="user")
+                message_widget.border_title = "User"
+                self.call_from_thread(self._chat_list.mount, message_widget)
 
-        output_widget = Static(classes="llm")
-        output_widget.border_title = "Assistant"
-        self.call_from_thread(self._chat_list.mount, output_widget)
+            output_widget = Static(classes="llm")
+            output_widget.border_title = "Assistant"
+            self.call_from_thread(self._chat_list.mount, output_widget)
 
-        files = self._index.query(message)
-        output_text = ""
+            if message:
+                files = self._index.query(message)
 
-        for chunk in self._chat.user_message(message, files):
-            output_text += chunk
-            self.call_from_thread(output_widget.update, output_text)
-            self.call_from_thread(self._chat_list.scroll_end)
+            output_text = ""
 
-        self.call_from_thread(self._chat_store.store, self._chat)
-        self.call_from_thread(self._user_input.set_loading, False)
+            for chunk in self._chat.user_message(message, files):
+                logging.info(chunk)
+                if isinstance(chunk, str):
+                    output_text += chunk
+                    next_message = False
+                elif isinstance(chunk, dict):
+                    output_text = f">>> Tool call: {chunk['name']}\n"
+                    output_text += f">>> Result: {truncate_text(chunk['content'])}"
+                    message = None
+                    next_message = True
+                self.call_from_thread(output_widget.update, output_text)
+                self.call_from_thread(self._chat_list.scroll_end)
+
+            self.call_from_thread(self._chat_store.store, self._chat)
 
         files_used = "; ".join(f.path() for f in files)
         files_widget = Static(files_used, classes="files")
         files_widget.border_title = "Files"
         self.call_from_thread(self._chat_list.mount, files_widget)
         self.call_from_thread(self._chat_list.scroll_end)
+        self.call_from_thread(self._user_input.set_loading, False)
 
     def _show_history_modal(self):
         def handle_history_result(chat: Chat | None):
@@ -183,6 +197,16 @@ class FilechatApp(App):
 
         for message in self._chat.messages:
             if message["role"] == "system":
+                continue
+
+            if "tool_call_id" in message:
+                output_text = f">>> Tool call: {message['name']}\n"
+                output_text += f">>> Result: {truncate_text(message['content'])}"
+                message_widget = Static(output_text, classes="llm")
+                self._chat_list.mount(message_widget)
+                continue
+
+            if not message["content"] or "tool_calls" in message:
                 continue
 
             message_widget = Static(

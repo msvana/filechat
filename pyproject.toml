@@ -53,8 +53,16 @@ enable-unstable-feature = [
   "wrap_long_dict_values_in_parens",
 ]
 
+[tool.ruff]
+line-length = 100
+preview = true
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [dependency-groups]
-dev = ["pytest>=8.4.1"]
+dev = [
+    "debugpy>=1.8.17",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.2.0",
+]

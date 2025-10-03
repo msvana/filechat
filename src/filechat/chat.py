@@ -1,14 +1,17 @@
+import json
 import os
+import sqlite3
 from hashlib import sha256
+from pathlib import Path
 from textwrap import dedent
 
 from mistralai import Mistral
-from openai import OpenAI
+from openai import OpenAI, omit
 
+from filechat import tools
 from filechat.config import Config
 from filechat.index import IndexedFile
-import sqlite3
-import json
+from filechat.utils import truncate_text
 
 
 class Chat:
@@ -29,46 +32,85 @@ class Chat:
     - Suggest changes that fit the existing codebase
     - Identify inconsistencies or potential issues
     - Provide concrete, implementable solutions
+    - This doesn't cover every file in the project, only the most relevant ones. You can use tools to get other files if you consider it useful
+
+    You have programmatic tools to inspect the project (list_directory and read_file). 
+    When you need any file contents or directory listing to answer correctly, prefer using those tools instead of guessing.
+    If you call read_file, pass the exact relative path within the project.
     
     Respond with actionable advice. When suggesting code changes, show specific examples using the project's existing conventions.
     """)
 
-    def __init__(self, client: Mistral | OpenAI, model: str, chat_id: int | None = None):
+    def __init__(
+        self,
+        client: Mistral | OpenAI,
+        model: str,
+        config: Config,
+        project_directory: str,
+        chat_id: int | None = None,
+    ):
         self._message_history: list[dict] = [{"role": "system", "content": self.SYSTEM_MESSAGE}]
         self._model = model
         self._client = client
+        self._config = config
+        self._project_directory = Path(project_directory)
         self._id = chat_id
 
-    def user_message(self, message: str, files: list[IndexedFile]):
-        user_message = {"role": "user", "content": message}
-        context_message = self._get_context_message(files)
-        self._message_history.append(user_message)
+    def user_message(self, message: str | None, files: list[IndexedFile], use_tools: bool = True):
+        if message:
+            user_message = {"role": "user", "content": message}
+            self._message_history.append(user_message)
 
         if isinstance(self._client, Mistral):
             response = self._client.chat.stream(
                 model=self._model,
-                messages=self._message_history + [context_message],  # type: ignore
+                messages=self._history_with_context(files),  # type: ignore
+                tools=tools.TOOLS if use_tools else None,  # type: ignore
             )
         else:
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=self._message_history + [context_message],  # type: ignore
+                messages=self._history_with_context(files),  # type: ignore
+                tools=tools.TOOLS if use_tools else None,  # type: ignore
                 stream=True,
+                parallel_tool_calls=False if use_tools else omit,
             )
 
         response_str = ""
+        tool_call_id = tool_call_name = tool_call_arguments = None
 
         for chunk in response:
             if hasattr(chunk, "data"):
                 chunk = chunk.data
-            chunk_content = chunk.choices[0].delta.content  # type: ignore
+
+            chunk_delta = chunk.choices[0].delta  # type: ignore
+
+            if not chunk_delta.content and not chunk_delta.tool_calls:
+                continue
+
+            if chunk_delta.tool_calls:
+                if not tool_call_id:
+                    tool_call_id = chunk_delta.tool_calls[0].id
+                    tool_call_name = chunk_delta.tool_calls[0].function.name
+                    tool_call_arguments = chunk_delta.tool_calls[0].function.arguments
+                else:
+                    assert isinstance(tool_call_arguments, str)
+                    tool_call_arguments += str(chunk_delta.tool_calls[0].function.arguments)
+                continue
+
+            chunk_content = chunk_delta.content
             response_str += str(chunk_content)
             yield str(chunk_content)
 
         filenames = [f.path() for f in files]
-        self._message_history.append(
-            {"role": "assistant", "content": response_str, "files_used": filenames}
-        )
+        self._message_history.append({
+            "role": "assistant",
+            "content": response_str,
+            "files_used": filenames,
+        })
+
+        if tool_call_id and tool_call_name and tool_call_arguments:
+            yield self._call_tool(tool_call_id, tool_call_name, str(tool_call_arguments))
 
     @property
     def chat_id(self) -> int | None:
@@ -91,27 +133,16 @@ class Chat:
         if len(self._message_history) < 2:
             return "New chat"
 
-        title_words = []
-        title_length_without_spaces = 0
         first_user_message = self._message_history[1]["content"]
-        first_user_message_words = first_user_message.split(" ")
+        return truncate_text(first_user_message, 50)
 
-        for word in first_user_message_words:
-            if (
-                title_length_without_spaces + len(title_words) - 1 + len(word)
-                > self.TITLE_MAX_LENGTH
-            ):
-                break
-            title_words.append(word)
-            title_length_without_spaces += len(word)
-
-        title = " ".join(title_words)
-        if len(title) < len(first_user_message):
-            title += "..."
-        return title
-
-    def _get_context_message(self, files: list[IndexedFile]) -> dict:
-        message = "<context>"
+    def _history_with_context(self, files: list[IndexedFile]) -> list[dict]:
+        message = (
+            "Here are the most relevant files to user's query found using embedding search."
+            "These are not the same as files returned via a tool call. Do no confuse the two."
+            "If you think these files are not enough, feel free to call a tool."
+        )
+        message += "<context>"
 
         for file in files:
             message += "<file>"
@@ -119,7 +150,59 @@ class Chat:
             message += "</file>"
 
         message += "</context>"
-        return {"role": "user", "content": message}
+
+        messages = self._message_history.copy()
+        messages.insert(
+            1,
+            {
+                "role": "system",
+                "content": message,
+            },
+        )
+
+        return messages
+
+    def _call_tool(self, tool_call_id: str, tool_call_name: str, tool_call_arguments: str) -> dict:
+        arguments_parsed: dict = json.loads(tool_call_arguments)
+        if tool_call_name == "list_directory":
+            try:
+                result = tools.list_directory(
+                    self._project_directory, arguments_parsed["path"], self._config
+                )
+            except Exception as e:
+                result = e
+        elif tool_call_name == "read_file":
+            try:
+                result = tools.read_file(
+                    self._project_directory, arguments_parsed["path"], self._config
+                )
+            except Exception as e:
+                result = e
+        else:
+            raise ValueError(f"Unknown tool '{tool_call_name}'")
+
+        self._message_history.append({
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "id": tool_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": tool_call_name,
+                        "arguments": tool_call_arguments,
+                    },
+                }
+            ],
+        })
+
+        self._message_history.append({
+            "tool_call_id": tool_call_id,
+            "role": "tool",
+            "name": tool_call_name,
+            "content": str(result),
+        })
+
+        return self._message_history[-1]
 
 
 class ChatStore:
@@ -127,6 +210,7 @@ class ChatStore:
 
     def __init__(self, directory: str, config: Config, client: Mistral | OpenAI):
         self._client = client
+        self._project_directory = directory
         self._file_path = self._get_file_path(directory, config.index_store_path)
         self._config = config
         if not os.path.exists(self._file_path):
@@ -143,7 +227,7 @@ class ChatStore:
         return file_path
 
     def new_chat(self) -> Chat:
-        return Chat(self._client, self._config.model.model)
+        return Chat(self._client, self._config.model.model, self._config, self._project_directory)
 
     def store(self, chat: Chat):
         if chat.chat_id is None:
@@ -174,12 +258,27 @@ class ChatStore:
         if not chat:
             return None
 
-        chat = Chat(self._client, self._config.model.model, chat_id)
+        chat = Chat(
+            self._client, self._config.model.model, self._config, self._project_directory, chat_id
+        )
         self._cursor.execute("SELECT * FROM messages WHERE chat_id = ?", (chat_id,))
         messages_raw = self._cursor.fetchall()
         messages = []
 
         for message_raw in messages_raw:
+            try:
+                message_dict = json.loads(message_raw[3])
+                if "tool_calls" in message_dict:
+                    messages.append({
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": message_dict["tool_calls"],
+                    })
+                elif "tool_response" in message_dict:
+                    messages.append(message_dict["tool_response"])
+                continue
+            except json.JSONDecodeError:
+                pass
             message = {
                 "role": message_raw[2],
                 "content": message_raw[3],
@@ -235,6 +334,12 @@ class ChatStore:
             files_used = message.get("files_used")
             if isinstance(files_used, list):
                 files_used = json.dumps(files_used)
+
+            if "tool_calls" in message:
+                message["content"] = json.dumps({"tool_calls": message["tool_calls"]})
+            elif "tool_call_id" in message:
+                message["content"] = json.dumps({"tool_response": message})
+
             self._cursor.execute(
                 query_template,
                 (
